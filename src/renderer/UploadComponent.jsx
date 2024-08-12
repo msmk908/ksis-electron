@@ -60,18 +60,22 @@ function UploadComponent() {
   };
 
   // 메타데이터를 서버에 전송
-  const sendFileMetadata = async (file, title, format, resolution) => {
+  const sendFileMetadata = async (file, title, resolution) => {
     const formData = {
-      filename: `${title || file.name}.${file.name.split('.').pop()}`,
-      title: title || file.name,
-      format: format,
-      resolution: resolution,
+      filename: file.name,
+      title: title,
+      format: `${file.name.split('.').pop()}`,
+      resolution: resolution || '1080p',
       fileSize: file.size,
       status: 'UPLOADING', // 초기 상태를 UPLOADING으로 설정
     };
 
     try {
-      await axios.post('http://localhost:8080/api/upload-metadata', formData);
+      await axios.post('http://localhost:8080/api/upload-metadata', formData, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     } catch (error) {
       console.error('Error sending file metadata:', error);
       throw error;
@@ -102,11 +106,11 @@ function UploadComponent() {
   const uploadFile = async (file, title, format, resolution) => {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     const fileExtension = file.name.split('.').pop(); // 확장자 추출
-    const filename = `${title || file.name}.${fileExtension}`; // 제목과 확장자 결합
+    const filename = title ? `${title}.${fileExtension}` : file.name; // 제목과 확장자 결합
 
     try {
       // 메타데이터 전송
-      await sendFileMetadata(file, title, format, resolution);
+      await sendFileMetadata(file, title, resolution);
 
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
@@ -116,7 +120,7 @@ function UploadComponent() {
         await uploadChunk(chunk, i, totalChunks, filename);
       }
 
-      return { filename, title, format, resolution };
+      return { file, title, format, resolution };
     } catch (error) {
       console.error(`Error uploading file ${filename}:`, error);
       throw error;
@@ -124,11 +128,11 @@ function UploadComponent() {
   };
 
   // 업로드 파일 상태 업데이트
-  const updateFileStatus = async (filename, status) => {
+  const updateFileStatus = async (title, status) => {
     try {
-      await axios.post('http://localhost:8080/api/update-file-status', {
-        filename,
-        status,
+      await axios.post('http://localhost:8080/api/update-file', {
+        title: title,
+        status: status,
       });
     } catch (error) {
       console.error(`Error updating file status:`, error);
@@ -147,14 +151,19 @@ function UploadComponent() {
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        const title = titles[i];
+        // title이 없을 경우 file.name에서 확장자를 제거한 값으로 설정
+        const fileNameWithoutExtension = file.name
+          .split('.')
+          .slice(0, -1)
+          .join('.');
+        const title = titles[i] || fileNameWithoutExtension;
         const format = formats[i];
         const resolution = resolutions[i];
         const metadata = await uploadFile(file, title, format, resolution);
 
         if (metadata) {
           // 업로드 완료 후 상태 업데이트
-          await updateFileStatus(metadata.filename, 'COMPLETED');
+          await updateFileStatus(metadata.title, 'COMPLETED');
         }
       }
 
