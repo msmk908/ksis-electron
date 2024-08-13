@@ -6,17 +6,43 @@ import 'tailwindcss/tailwind.css'; // 테일윈드 css 적용
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
   const [titles, setTitles] = useState({}); // 파일 제목 저장
-  const [formats, setFormats] = useState({}); // 파일 포맷 저장
-  const [resolutions, setResolutions] = useState({}); // 파일 해상도 저장
+  const [formats, setFormats] = useState({}); // 인코딩 포맷 저장
+  const [resolutions, setResolutions] = useState({}); // 인코딩 해상도 저장
+  const [fileSizes, setFileSizes] = useState({}); // 파일 크기 저장
+  const [videoDurations, setVideoDurations] = useState({}); // 동영상 길이 저장
   const [uploadStatus, setUploadStatus] = useState(''); // 업로드 상태
   const fileInputRef = useRef(null); // 파일첨부 기능
 
   const CHUNK_SIZE = 1024 * 1024; // 청크 사이즈 1MB
 
+  // 파일 크기와 해상도 추출 및 처리
+  const processFileResolution = (file, index) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video');
+      video.src = URL.createObjectURL(file);
+      video.onloadedmetadata = () => {
+        const size = `${video.videoWidth}x${video.videoHeight}`; // 파일의 크기
+        const duration = video.duration; // 동영상 길이 (초)
+        setFileSizes((prevSizes) => ({
+          ...prevSizes,
+          [index]: size,
+        }));
+        setVideoDurations((prevDurations) => ({
+          ...prevDurations,
+          [index]: duration,
+        }));
+        resolve({ size, duration });
+      };
+    });
+  };
+
   // 첨부한 파일 컨트롤
   const handleFileChange = (e) => {
     const newFiles = Array.from(e.target.files);
-    setFiles([...files, ...newFiles]);
+    setFiles((prevFiles) => [...prevFiles, ...newFiles]);
+    newFiles.forEach((file, index) =>
+      processFileResolution(file, files.length + index),
+    );
   };
 
   // 드롭으로 파일 컨트롤
@@ -24,6 +50,9 @@ function UploadComponent() {
     e.preventDefault();
     const droppedFiles = Array.from(e.dataTransfer.files);
     setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
+    droppedFiles.forEach((file, index) =>
+      processFileResolution(file, files.length + index),
+    );
   };
 
   // 드래그 할 때 기본 기능 비활성화
@@ -37,13 +66,13 @@ function UploadComponent() {
     setTitles(newTitles);
   };
 
-  // 파일 포맷 컨트롤
+  // 인코딩 포맷 컨트롤
   const handleFormatChange = (index, e) => {
     const newFormats = { ...formats, [index]: e.target.value };
     setFormats(newFormats);
   };
 
-  // 파일 해상도 컨트롤
+  // 원본, 인코딩 해상도 컨트롤
   const handleResolutionChange = (index, e) => {
     const newResolutions = { ...resolutions, [index]: e.target.value };
     setResolutions(newResolutions);
@@ -60,13 +89,17 @@ function UploadComponent() {
   };
 
   // 메타데이터를 서버에 전송
-  const sendFileMetadata = async (file, title, resolution) => {
+  const sendFileMetadata = async (file, title, originalSize, duration) => {
     const formData = {
       filename: file.name,
       title: title,
+      filePath:
+        'C:\\Users\\codepc\\git\\ksis\\src\\main\\resources\\uploads\\' +
+        file.name,
       format: `${file.name.split('.').pop()}`,
-      resolution: resolution || '1080p',
+      resolution: originalSize || '1080p',
       fileSize: file.size,
+      playTime: duration,
       status: 'UPLOADING', // 초기 상태를 UPLOADING으로 설정
     };
 
@@ -103,14 +136,12 @@ function UploadComponent() {
   };
 
   // 파일 정보를 청크 업로드로 넘겨주는 메서드
-  const uploadFile = async (file, title, format, resolution) => {
+  const uploadFile = async (file, title, originalSize, duration) => {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const fileExtension = file.name.split('.').pop(); // 확장자 추출
-    const filename = title ? `${title}.${fileExtension}` : file.name; // 제목과 확장자 결합
-
+    const filename = file.name;
     try {
       // 메타데이터 전송
-      await sendFileMetadata(file, title, resolution);
+      await sendFileMetadata(file, title, originalSize, duration);
 
       for (let i = 0; i < totalChunks; i++) {
         const start = i * CHUNK_SIZE;
@@ -120,7 +151,7 @@ function UploadComponent() {
         await uploadChunk(chunk, i, totalChunks, filename);
       }
 
-      return { file, title, format, resolution };
+      return { file, title };
     } catch (error) {
       console.error(`Error uploading file ${filename}:`, error);
       throw error;
@@ -141,6 +172,7 @@ function UploadComponent() {
 
   // 업로드 버튼 클릭 메서드
   const handleUpload = async () => {
+    // 파일이 선택되지 않았을 때
     if (files.length === 0) {
       setUploadStatus('No file selected.');
       return;
@@ -148,37 +180,41 @@ function UploadComponent() {
 
     setUploadStatus('Uploading...');
 
+    // 파일들을 업로드
     try {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
-        // title이 없을 경우 file.name에서 확장자를 제거한 값으로 설정
         const fileNameWithoutExtension = file.name
           .split('.')
           .slice(0, -1)
           .join('.');
         const title = titles[i] || fileNameWithoutExtension;
-        const format = formats[i];
-        const resolution = resolutions[i];
-        const metadata = await uploadFile(file, title, format, resolution);
+        const originalSize = fileSizes[i]; // 원본 크기
+        const duration = videoDurations[i] || 0; // 동영상 길이
+
+        // 파일 업로드 메서드
+        const metadata = await uploadFile(file, title, originalSize, duration);
 
         if (metadata) {
           // 업로드 완료 후 상태 업데이트
-          await updateFileStatus(metadata.title, 'COMPLETED');
+          await updateFileStatus(file.name, 'COMPLETED');
         }
       }
 
-      setUploadStatus('File uploaded successfully!');
+      setUploadStatus('File uploaded successfully!'); // 모두 완료
     } catch (error) {
-      setUploadStatus('Error uploading file.');
+      setUploadStatus('Error uploading file.'); // 업로드 중 오류
       console.error('Error:', error);
 
       // 업로드 실패 시 상태 업데이트
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const title = titles[i];
+        const titleOrFilename = title
+          ? title
+          : file.name.split('.').slice(0, -1).join('.');
 
-        const filename = `${title || file.name}.${file.name.split('.').pop()}`;
-        await updateFileStatus(filename, 'FAIL'); // 실패 시 상태를 FAIL로 업데이트
+        await updateFileStatus(titleOrFilename, 'FAIL'); // 실패 시 상태를 FAIL로 업데이트
       }
     }
   };
