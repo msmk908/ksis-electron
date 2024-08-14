@@ -1,14 +1,16 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-
 export type Channels = 'ipc-example';
 
 const electronHandler = {
   ipcRenderer: {
+    // 메세지를 보내는 함수
     sendMessage(channel: Channels, ...args: unknown[]) {
       ipcRenderer.send(channel, ...args);
     },
+
+    // 메세지를 수신하는 함수 (리스너 등록)
     on(channel: Channels, func: (...args: unknown[]) => void) {
       const subscription = (_event: IpcRendererEvent, ...args: unknown[]) =>
         func(...args);
@@ -18,10 +20,21 @@ const electronHandler = {
         ipcRenderer.removeListener(channel, subscription);
       };
     },
+
+    // 메세지를 한 번만 수신하는 함수
     once(channel: Channels, func: (...args: unknown[]) => void) {
       ipcRenderer.once(channel, (_event, ...args) => func(...args));
     },
+
+    // IPC 요청을 보내고 응답을 받는 함수 (비동기)
+    invoke(channel: Channels, ...args: unknown[]) {
+      return ipcRenderer.invoke(channel, ...args);
+    }
   },
+
+  getMacAddress() {
+    return ipcRenderer.invoke('get-mac-address');
+  }
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
