@@ -150,12 +150,50 @@ function UploadComponent() {
     e.stopPropagation();
   };
 
-  const handleUpload = () => {
-    console.log('Files:', files);
-    console.log('Titles:', titles);
-    console.log('Encodings:', encodings);
-    console.log('Resolutions:', resolutions);
-    // 여기에 파일 업로드 로직을 추가하세요
+  // 업로드 버튼 클릭 메서드
+  const handleUpload = async () => {
+    try {
+      const formData = new FormData();
+
+      // 파일과 관련된 데이터들을 formData에 추가
+      files.forEach((file, index) => {
+        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
+        const fileTitle =
+          titles[index] || file.name.split('.').slice(0, -1).join('.');
+        // 해상도 문자열 생성
+        const resolutionString = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+
+        formData.append('file', file);
+        formData.append('title', fileTitle);
+        formData.append('format', fileExtension);
+        formData.append('resolution', resolutionString);
+        formData.append('playTime', resolutions[index].playtime || '0');
+        formData.append('status', 'UPLOADING');
+        formData.append(
+          'resourceType',
+          file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO',
+        );
+      });
+
+      // 서버에 요청 보내기
+      const response = await axios.post(
+        'http://localhost:8080/api/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      // 업로드 성공시 처리
+      setUploadStatus(response.data || 'Upload successful!');
+    } catch (error) {
+      // 업로드 실패시 처리
+      setUploadStatus(`Upload failed: ${error.message}`);
+    }
   };
 
   // 파일의 정보를 가져오는 함수
