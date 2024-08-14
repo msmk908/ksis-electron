@@ -12,7 +12,7 @@ const Sidebar: React.FC = () => {
       <ul className="space-y-2">
         <li>
           <NavLink
-            to="/upload"
+            to="/"
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
@@ -32,6 +32,18 @@ const Sidebar: React.FC = () => {
             }
           >
             업로드 진행상황
+          </NavLink>
+        </li>
+        <li>
+          <NavLink
+            to="/logout"
+            className={({ isActive }) =>
+              `text-center block text-lg p-2 rounded-full ${
+                isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
+              }`
+            }
+          >
+            로그아웃
           </NavLink>
         </li>
       </ul>

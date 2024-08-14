@@ -72,6 +72,7 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
+    autoHideMenuBar: true
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
@@ -104,6 +105,29 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 };
+
+ipcMain.handle('get-mac-address', () => {
+  const networkInterfaces = os.networkInterfaces();
+  const macAddresses: string[] = [];
+
+  for (const key in networkInterfaces) {
+    if (networkInterfaces.hasOwnProperty(key)) {
+      const addresses = networkInterfaces[key];
+      
+      // addresses가 undefined가 아닐 때만 처리
+      if (addresses) {
+        addresses.forEach((address) => {
+          if (address.mac && address.mac !== '00:00:00:00:00:00') {
+            macAddresses.push(address.mac);
+          }
+        });
+      }
+    }
+  }
+
+  return macAddresses[0] || null; // 첫 번째 MAC 주소를 반환하거나 없으면 null
+});
+
 
 /**
  * Add event listeners...
