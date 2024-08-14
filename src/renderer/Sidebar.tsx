@@ -12,7 +12,7 @@ const Sidebar: React.FC = () => {
       <ul className="space-y-2">
         <li>
           <NavLink
-            to="/"
+            to="/upload"
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
