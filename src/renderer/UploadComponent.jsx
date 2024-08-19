@@ -9,6 +9,7 @@ function UploadComponent() {
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const [uploadStatus, setUploadStatus] = useState(''); // 업로드 상태
   const fileInputRef = useRef(null); // 파일첨부 기능
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
 
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
@@ -150,52 +151,6 @@ function UploadComponent() {
     e.stopPropagation();
   };
 
-  // 업로드 버튼 클릭 메서드
-  const handleUpload = async () => {
-    try {
-      const formData = new FormData();
-
-      // 파일과 관련된 데이터들을 formData에 추가
-      files.forEach((file, index) => {
-        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
-        const fileExtension = file.name.split('.').pop().toLowerCase();
-        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
-        const fileTitle =
-          titles[index] || file.name.split('.').slice(0, -1).join('.');
-        // 해상도 문자열 생성
-        const resolutionString = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
-
-        formData.append('file', file);
-        formData.append('title', fileTitle);
-        formData.append('format', fileExtension);
-        formData.append('resolution', resolutionString);
-        formData.append('playTime', resolutions[index].playtime || '0');
-        formData.append('status', 'UPLOADING');
-        formData.append(
-          'resourceType',
-          file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO',
-        );
-      });
-
-      // 서버에 요청 보내기
-      const response = await axios.post(
-        'http://localhost:8080/api/upload',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        },
-      );
-
-      // 업로드 성공시 처리
-      setUploadStatus(response.data || 'Upload successful!');
-    } catch (error) {
-      // 업로드 실패시 처리
-      setUploadStatus(`Upload failed: ${error.message}`);
-    }
-  };
-
   // 파일의 정보를 가져오는 함수
   const getFileInfo = (files, startIndex) => {
     return Promise.all(
@@ -257,6 +212,81 @@ function UploadComponent() {
     });
   };
 
+  // 업로드 버튼 클릭 메서드
+  const handleUpload = async () => {
+    try {
+      const formData = new FormData();
+
+      // 파일과 관련된 데이터들을 formData에 추가
+      files.forEach((file, index) => {
+        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
+        const fileTitle =
+          titles[index] || file.name.split('.').slice(0, -1).join('.');
+        // 해상도 문자열 생성
+        const resolutionString = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+
+        formData.append('files', file);
+        formData.append('titles', fileTitle);
+        formData.append('formats', fileExtension);
+        formData.append('resolutions', resolutionString);
+        formData.append('playTimes', resolutions[index].playtime || '0');
+        formData.append('statuses', 'UPLOADING');
+        formData.append(
+          'resourceTypes',
+          file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO',
+        );
+      });
+
+      // 데이터베이스 저장 메서드
+      const saveResponse = await axios.post(
+        'http://localhost:8080/api/filedatasave',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        },
+      );
+
+      if (saveResponse.status === 200) {
+        // 파일 이름을 포함한 응답 데이터 처리
+        const fileNames = Object.values(saveResponse.data);
+
+        // 파일 업로드를 위한 폼 데이터
+        const uploadFormData = new FormData();
+        files.forEach((file, index) => {
+          uploadFormData.append('files', file);
+          uploadFormData.append('fileNames', fileNames[index]);
+        });
+
+        // 실제 파일 업로드 요청
+        const uploadResponse = await axios.post(
+          'http://localhost:8080/api/upload',
+          uploadFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          },
+        );
+
+        // 업로드 성공시 처리
+        if (uploadResponse.status === 200) {
+          setUploadStatus('업로드가 완료되었습니다.');
+        } else {
+          setUploadStatus('파일 업로드 중 오류가 발생했습니다.');
+        }
+      } else {
+        setUploadStatus('데이터베이스 저장 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      // 업로드 실패시 처리
+      setUploadStatus(`업로드 실패: ${error.message}`);
+    }
+  };
+
   return (
     <div>
       <h2>파일 업로드</h2>
@@ -275,6 +305,9 @@ function UploadComponent() {
         <div className="p-10">
           {files.map((file, fileIndex) => {
             const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const fileUrl = URL.createObjectURL(file); // 파일의 URL 생성
+
             return (
               <div
                 key={fileIndex}
@@ -288,11 +321,21 @@ function UploadComponent() {
                   &times;
                 </button>
                 <div className="w-1/2 pr-4">
-                  <img
-                    src={URL.createObjectURL(file)}
-                    alt={file.name}
-                    className="w-full h-auto object-cover"
-                  />
+                  {isImage ? (
+                    <img
+                      src={fileUrl}
+                      alt={file.name}
+                      className="w-full h-auto object-cover"
+                    />
+                  ) : isVideo ? (
+                    <video
+                      src={fileUrl}
+                      className="w-full h-auto object-cover"
+                      controls
+                    />
+                  ) : (
+                    <p>미리보기 불가</p>
+                  )}
                 </div>
 
                 <div className="w-1/2 pr-4">
