@@ -286,6 +286,27 @@ function UploadComponent() {
           }
         }
 
+        // 인코딩 작업 요청
+        // 인코딩 설정과 원본 파일 이름을 매핑
+        const encodingsWithFileNames = files.reduce((acc, file, index) => {
+          acc[fileNames[index]] = encodings[index];
+          return acc;
+        }, {});
+
+        // 콘솔에 보기 좋게 출력
+        console.log('원본 파일 이름과 인코딩 설정:');
+        console.log(JSON.stringify(encodingsWithFileNames, null, 2));
+
+        await axios.post(
+          'http://localhost:8080/api/encoding',
+          encodingsWithFileNames,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          },
+        );
+
         setUploadStatus('업로드가 완료되었습니다.');
       }
     } catch (error) {
@@ -367,14 +388,16 @@ function UploadComponent() {
                         >
                           {isImage ? (
                             <>
-                              <option value="jpg">JPG</option>
                               <option value="png">PNG</option>
+                              <option value="jpg">JPG</option>
+                              <option value="bmp">BMP</option>
                             </>
                           ) : (
                             <>
                               <option value="mp4">MP4</option>
                               <option value="mov">MOV</option>
                               <option value="avi">AVI</option>
+                              <option value="mkv">MKV</option>
                             </>
                           )}
                         </select>
