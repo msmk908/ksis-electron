@@ -253,24 +253,26 @@ function UploadComponent() {
       if (saveResponse.status === 200) {
         // 파일 이름을 포함한 응답 데이터 처리
         const fileNames = Object.values(saveResponse.data);
+        let uploadResponse;
 
-        // 파일 업로드를 위한 폼 데이터
-        const uploadFormData = new FormData();
-        files.forEach((file, index) => {
-          uploadFormData.append('files', file);
-          uploadFormData.append('fileNames', fileNames[index]);
-        });
+        for (let i = 0; i < fileNames.length; i++) {
+          // 파일 업로드를 위한 폼 데이터
+          const uploadFormData = new FormData();
 
-        // 실제 파일 업로드 요청
-        const uploadResponse = await axios.post(
-          'http://localhost:8080/api/upload',
-          uploadFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
+          uploadFormData.append('files', files[i]);
+          uploadFormData.append('fileNames', fileNames[i]);
+
+          // 실제 파일 업로드 요청
+          uploadResponse = await axios.post(
+            'http://localhost:8080/api/upload',
+            uploadFormData,
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data',
+              },
             },
-          },
-        );
+          );
+        }
 
         // 업로드 성공시 처리
         if (uploadResponse.status === 200) {
