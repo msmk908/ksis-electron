@@ -253,35 +253,40 @@ function UploadComponent() {
       if (saveResponse.status === 200) {
         // 파일 이름을 포함한 응답 데이터 처리
         const fileNames = Object.values(saveResponse.data);
-        let uploadResponse;
+        const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB씩 청크로 나누기
 
         for (let i = 0; i < fileNames.length; i++) {
-          // 파일 업로드를 위한 폼 데이터
-          const uploadFormData = new FormData();
+          const file = files[i];
+          const uuidFileName = fileNames[i];
+          const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-          uploadFormData.append('files', files[i]);
-          uploadFormData.append('fileNames', fileNames[i]);
+          for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            const start = chunkIndex * CHUNK_SIZE;
+            const end = Math.min(file.size, start + CHUNK_SIZE);
+            const chunk = file.slice(start, end);
 
-          // 실제 파일 업로드 요청
-          uploadResponse = await axios.post(
-            'http://localhost:8080/api/upload',
-            uploadFormData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data',
+            const chunkFormData = new FormData();
+            chunkFormData.append('file', chunk);
+            chunkFormData.append('fileName', uuidFileName);
+            chunkFormData.append('chunkIndex', chunkIndex);
+            chunkFormData.append('totalChunks', totalChunks);
+
+            const response = await axios.post(
+              'http://localhost:8080/api/upload/chunk',
+              chunkFormData,
+              {
+                headers: {
+                  'Content-Type': 'multipart/form-data',
+                },
               },
-            },
-          );
+            );
+            if (response.status !== 200) {
+              throw new Error('파일 청크 업로드 실패');
+            }
+          }
         }
 
-        // 업로드 성공시 처리
-        if (uploadResponse.status === 200) {
-          setUploadStatus('업로드가 완료되었습니다.');
-        } else {
-          setUploadStatus('파일 업로드 중 오류가 발생했습니다.');
-        }
-      } else {
-        setUploadStatus('데이터베이스 저장 중 오류가 발생했습니다.');
+        setUploadStatus('업로드가 완료되었습니다.');
       }
     } catch (error) {
       // 업로드 실패시 처리
