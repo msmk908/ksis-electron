@@ -289,7 +289,10 @@ function UploadComponent() {
         // 인코딩 작업 요청
         // 인코딩 설정과 원본 파일 이름을 매핑
         const encodingsWithFileNames = files.reduce((acc, file, index) => {
-          acc[fileNames[index]] = encodings[index];
+          acc[fileNames[index]] = {
+            encodings: encodings[index],
+            title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
+          };
           return acc;
         }, {});
 
