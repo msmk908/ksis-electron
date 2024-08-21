@@ -128,6 +128,9 @@ ipcMain.handle('get-mac-address', () => {
   return macAddresses[0] || null; // 첫 번째 MAC 주소를 반환하거나 없으면 null
 });
 
+ipcMain.handle('open-url', (event, url) => {
+  shell.openExternal(url);
+});
 
 /**
  * Add event listeners...
