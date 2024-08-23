@@ -237,6 +237,14 @@ function UploadComponent() {
         const playTime = resolutions[index].playtime || '0';
         // 파일 타입
         const resourceType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
+        // 파일 URL
+        const fileUrl = URL.createObjectURL(file);
+
+        // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
+        localStorage.setItem(
+          `uploadProgress_${fileTitle}`,
+          JSON.stringify({ progress: 0, previewUrl: fileUrl }),
+        );
 
         // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
         const dto = {
@@ -276,8 +284,11 @@ function UploadComponent() {
 
         for (let i = 0; i < savedResources.length; i++) {
           const file = files[i];
+          const fileTitle = savedResources[i].fileTitle;
           const uuidFileName = savedResources[i].filename;
           const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+          let uploadedChunks = 0;
+          const fileUrl = URL.createObjectURL(file); // 파일 URL 생성
 
           for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
             const start = chunkIndex * CHUNK_SIZE;
@@ -297,6 +308,22 @@ function UploadComponent() {
                 headers: {
                   'Content-Type': 'multipart/form-data',
                 },
+                onUploadProgress: (progressEvent) => {
+                  // 업로드 진행 상황 업데이트
+                  if (progressEvent.loaded === progressEvent.total) {
+                    uploadedChunks++;
+                    const percentCompleted = Math.round(
+                      (uploadedChunks / totalChunks) * 100,
+                    );
+                    localStorage.setItem(
+                      `uploadProgress_${fileTitle}`,
+                      JSON.stringify({
+                        progress: percentCompleted,
+                        previewUrl: fileUrl,
+                      }),
+                    );
+                  }
+                },
               },
             );
             if (response.status !== 200) {
@@ -314,10 +341,6 @@ function UploadComponent() {
           };
           return acc;
         }, {});
-
-        // 콘솔에 보기 좋게 출력
-        console.log('원본 파일 이름과 인코딩 설정:');
-        console.log(JSON.stringify(encodingsWithFileNames, null, 2));
 
         await axios.post(
           'http://localhost:8080/api/encoding',
