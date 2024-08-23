@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
+import { useNavigate } from 'react-router-dom';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -9,6 +10,7 @@ function UploadComponent() {
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const [uploadStatus, setUploadStatus] = useState(''); // 업로드 상태
   const fileInputRef = useRef(null); // 파일첨부 기능
+  const navigate = useNavigate(); // 네비게이트 훅 사용
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
 
   // 첨부파일 추가 메서드
@@ -214,30 +216,47 @@ function UploadComponent() {
 
   // 업로드 버튼 클릭 메서드
   const handleUpload = async () => {
+    // 알림창 표시
+    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
+    navigate('/uploadProgress'); // 페이지 이동
+
     try {
       const formData = new FormData();
+      const dtos = [];
 
       // 파일과 관련된 데이터들을 formData에 추가
       files.forEach((file, index) => {
         // 원본 파일의 확장자 추출 (확장자에서 . 제거)
-        const fileExtension = file.name.split('.').pop().toLowerCase();
+        const format = file.name.split('.').pop().toLowerCase();
         // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
         const fileTitle =
           titles[index] || file.name.split('.').slice(0, -1).join('.');
         // 해상도 문자열 생성
-        const resolutionString = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+        const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+        // 재생시간
+        const playTime = resolutions[index].playtime || '0';
+        // 파일 타입
+        const resourceType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
 
-        formData.append('files', file);
-        formData.append('titles', fileTitle);
-        formData.append('formats', fileExtension);
-        formData.append('resolutions', resolutionString);
-        formData.append('playTimes', resolutions[index].playtime || '0');
-        formData.append('statuses', 'UPLOADING');
-        formData.append(
-          'resourceTypes',
-          file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO',
-        );
+        // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
+        const dto = {
+          fileTitle: fileTitle,
+          playTime: playTime,
+          format: format,
+          resolution: resolution,
+          status: 'UPLOADING',
+          resourceType: resourceType,
+        };
+
+        dtos.push(dto); // DTO 리스트에 추가
+        formData.append('files', file); // 파일 자체를 추가
       });
+
+      // DTO 리스트를 JSON 배열로 변환하여 전송
+      formData.append(
+        'dtos',
+        new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
+      );
 
       // 데이터베이스 저장 메서드
       const saveResponse = await axios.post(
@@ -251,13 +270,13 @@ function UploadComponent() {
       );
 
       if (saveResponse.status === 200) {
-        // 파일 이름을 포함한 응답 데이터 처리
-        const fileNames = Object.values(saveResponse.data);
+        // 서버에서 반환된 DTO 리스트에서 파일 이름들을 추출
+        const savedResources = saveResponse.data; // DTO 리스트
         const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB씩 청크로 나누기
 
-        for (let i = 0; i < fileNames.length; i++) {
+        for (let i = 0; i < savedResources.length; i++) {
           const file = files[i];
-          const uuidFileName = fileNames[i];
+          const uuidFileName = savedResources[i].filename;
           const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
           for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
@@ -289,7 +308,7 @@ function UploadComponent() {
         // 인코딩 작업 요청
         // 인코딩 설정과 원본 파일 이름을 매핑
         const encodingsWithFileNames = files.reduce((acc, file, index) => {
-          acc[fileNames[index]] = {
+          acc[savedResources[index].filename] = {
             encodings: encodings[index],
             title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
           };
