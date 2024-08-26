@@ -30,8 +30,9 @@ const Login = () => {
                     localStorage.setItem('refreshToken', data.refreshToken);
                     alert('Login successful');
                     navigate('/upload');
-                    // accountId를 쿼리 파라미터로 포함한 URL 생성
-                    const url = `http://localhost:3000/get-token?accountId=${encodeURIComponent(accountId)}`;
+                    // 쿼리 파라미터로 포함한 URL 생성
+                    // const url = `http://localhost:3000/get-token?accountId=${encodeURIComponent(accountId)}`;
+                    const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
 
                     window.electron.ipcRenderer.invoke('open-url', url);
                 } else {
