@@ -214,6 +214,18 @@ function UploadComponent() {
     });
   };
 
+  // 파일을 base64로 변환하는 함수
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   // 업로드 버튼 클릭 메서드
   const handleUpload = async () => {
     // 알림창 표시
@@ -225,40 +237,52 @@ function UploadComponent() {
       const dtos = [];
 
       // 파일과 관련된 데이터들을 formData에 추가
-      files.forEach((file, index) => {
-        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
-        const format = file.name.split('.').pop().toLowerCase();
-        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
-        const fileTitle =
-          titles[index] || file.name.split('.').slice(0, -1).join('.');
-        // 해상도 문자열 생성
-        const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
-        // 재생시간
-        const playTime = resolutions[index].playtime || '0';
-        // 파일 타입
-        const resourceType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
-        // 파일 URL
-        const fileUrl = URL.createObjectURL(file);
+      await Promise.all(
+        files.map(async (file, index) => {
+          console.log(index);
+          console.log(file);
+          // 원본 파일의 확장자 추출 (확장자에서 . 제거)
+          const format = file.name.split('.').pop().toLowerCase();
+          // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
+          const fileTitle =
+            titles[index] || file.name.split('.').slice(0, -1).join('.');
+          // 해상도 문자열 생성
+          const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+          // 재생시간
+          const playTime = resolutions[index].playtime || '0';
+          // 파일 타입
+          const resourceType = file.type.startsWith('image/')
+            ? 'IMAGE'
+            : 'VIDEO';
 
-        // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
-        localStorage.setItem(
-          `uploadProgress_${fileTitle}`,
-          JSON.stringify({ progress: 0, previewUrl: fileUrl }),
-        );
+          // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
+          if (resourceType === 'IMAGE') {
+            const fileUrl = await fileToBase64(file);
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ progress: 0, previewUrl: fileUrl }),
+            );
+          } else {
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ progress: 0, previewUrl: 'video-icon' }),
+            );
+          }
 
-        // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
-        const dto = {
-          fileTitle: fileTitle,
-          playTime: playTime,
-          format: format,
-          resolution: resolution,
-          status: 'UPLOADING',
-          resourceType: resourceType,
-        };
+          // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
+          const dto = {
+            fileTitle: fileTitle,
+            playTime: playTime,
+            format: format,
+            resolution: resolution,
+            status: 'UPLOADING',
+            resourceType: resourceType,
+          };
 
-        dtos.push(dto); // DTO 리스트에 추가
-        formData.append('files', file); // 파일 자체를 추가
-      });
+          dtos.push(dto); // DTO 리스트에 추가
+          formData.append('files', file); // 파일 자체를 추가
+        }),
+      );
 
       // DTO 리스트를 JSON 배열로 변환하여 전송
       formData.append(
@@ -278,17 +302,22 @@ function UploadComponent() {
       );
 
       if (saveResponse.status === 200) {
-        // 서버에서 반환된 DTO 리스트에서 파일 이름들을 추출
-        const savedResources = saveResponse.data; // DTO 리스트
-        const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB씩 청크로 나누기
+        console.log(saveResponse);
+        // 서버에서 반환된 DTO 리스트
+        const savedResources = saveResponse.data;
+        const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB 청크 사이즈
 
         for (let i = 0; i < savedResources.length; i++) {
-          const file = files[i];
-          const fileTitle = savedResources[i].fileTitle;
-          const uuidFileName = savedResources[i].filename;
+          const {
+            userFile: file,
+            fileTitle,
+            filename: uuidFileName,
+            fileIndex,
+          } = savedResources[i];
           const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-          let uploadedChunks = 0;
-          const fileUrl = URL.createObjectURL(file); // 파일 URL 생성
+          console.log(file);
+          console.log(fileTitle);
+          console.log(fileIndex);
 
           for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
             const start = chunkIndex * CHUNK_SIZE;
@@ -309,23 +338,33 @@ function UploadComponent() {
                   'Content-Type': 'multipart/form-data',
                 },
                 onUploadProgress: (progressEvent) => {
-                  // 업로드 진행 상황 업데이트
-                  if (progressEvent.loaded === progressEvent.total) {
-                    uploadedChunks++;
-                    const percentCompleted = Math.round(
-                      (uploadedChunks / totalChunks) * 100,
-                    );
-                    localStorage.setItem(
-                      `uploadProgress_${fileTitle}`,
-                      JSON.stringify({
-                        progress: percentCompleted,
-                        previewUrl: fileUrl,
-                      }),
-                    );
-                  }
+                  const percentCompleted = Math.min(
+                    100,
+                    Math.round(
+                      ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
+                        file.size) *
+                        100,
+                    ),
+                  );
+
+                  // 기존 로컬스토리지 데이터 가져오기
+                  const existingData =
+                    JSON.parse(
+                      localStorage.getItem(`uploadProgress_${fileTitle}`),
+                    ) || {};
+
+                  // 업데이트된 데이터로 로컬스토리지 업데이트
+                  localStorage.setItem(
+                    `uploadProgress_${fileTitle}`,
+                    JSON.stringify({
+                      ...existingData,
+                      progress: percentCompleted,
+                    }),
+                  );
                 },
               },
             );
+
             if (response.status !== 200) {
               throw new Error('파일 청크 업로드 실패');
             }
@@ -356,7 +395,7 @@ function UploadComponent() {
       }
     } catch (error) {
       // 업로드 실패시 처리
-      setUploadStatus(`업로드 실패: ${error.message}`);
+      console.log(error.message);
     }
   };
 
