@@ -239,8 +239,6 @@ function UploadComponent() {
       // 파일과 관련된 데이터들을 formData에 추가
       await Promise.all(
         files.map(async (file, index) => {
-          console.log(index);
-          console.log(file);
           // 원본 파일의 확장자 추출 (확장자에서 . 제거)
           const format = file.name.split('.').pop().toLowerCase();
           // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
@@ -302,9 +300,45 @@ function UploadComponent() {
       );
 
       if (saveResponse.status === 200) {
-        console.log(saveResponse);
         // 서버에서 반환된 DTO 리스트
         const savedResources = saveResponse.data;
+
+        // 파일 제목과 파일 객체를 매핑
+        const fileTitleMap = files.reduce((acc, file, index) => {
+          const title =
+            titles[index] || file.name.split('.').slice(0, -1).join('.');
+          acc[title] = file;
+          return acc;
+        }, {});
+
+        // 파일 제목을 기준으로 정렬
+        savedResources.sort((a, b) => {
+          // fileTitle을 통해 파일 제목과 매칭
+          const aTitle = Object.keys(fileTitleMap).find(
+            (title) => title === a.fileTitle,
+          );
+          const bTitle = Object.keys(fileTitleMap).find(
+            (title) => title === b.fileTitle,
+          );
+
+          const aIndex = files.indexOf(fileTitleMap[aTitle]);
+          const bIndex = files.indexOf(fileTitleMap[bTitle]);
+
+          return aIndex - bIndex;
+        });
+
+        files.forEach((file, index) => {
+          console.log(`파일 ${index}:`, {
+            name: file.name,
+          });
+        });
+
+        savedResources.forEach((resource, index) => {
+          console.log(`리턴값 ${index}:`, {
+            filetitle: resource.fileTitle,
+          });
+        });
+
         const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB 청크 사이즈
 
         for (let i = 0; i < savedResources.length; i++) {
@@ -375,10 +409,6 @@ function UploadComponent() {
           };
           return acc;
         }, {});
-
-        // 콘솔에 보기 좋게 출력
-        console.log('원본 파일 이름과 인코딩 설정:');
-        console.log(JSON.stringify(encodingsWithFileNames, null, 2));
 
         await axios.post(
           'http://localhost:8080/api/encoding',
