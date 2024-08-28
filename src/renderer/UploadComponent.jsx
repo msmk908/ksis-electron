@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
@@ -226,7 +226,7 @@ function UploadComponent() {
     });
   };
 
-  // 업로드 버튼 클릭 메서드
+  // 업로드 버튼 함수
   const handleUpload = async () => {
     // 알림창 표시
     window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
@@ -254,18 +254,16 @@ function UploadComponent() {
             : 'VIDEO';
 
           // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
-          if (resourceType === 'IMAGE') {
-            const fileUrl = await fileToBase64(file);
-            localStorage.setItem(
-              `uploadProgress_${fileTitle}`,
-              JSON.stringify({ progress: 0, previewUrl: fileUrl }),
-            );
-          } else {
-            localStorage.setItem(
-              `uploadProgress_${fileTitle}`,
-              JSON.stringify({ progress: 0, previewUrl: 'video-icon' }),
-            );
-          }
+          localStorage.setItem(
+            `uploadProgress_${fileTitle}`,
+            JSON.stringify({
+              progress: 0,
+              previewUrl:
+                resourceType === 'IMAGE'
+                  ? await fileToBase64(file)
+                  : 'video-icon',
+            }),
+          );
 
           // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
           const dto = {
@@ -327,20 +325,21 @@ function UploadComponent() {
           return aIndex - bIndex;
         });
 
+        // 파일 콘솔
         files.forEach((file, index) => {
           console.log(`파일 ${index}:`, {
             name: file.name,
           });
         });
 
+        // 저장된 dto 콘솔
         savedResources.forEach((resource, index) => {
           console.log(`리턴값 ${index}:`, {
             filetitle: resource.fileTitle,
           });
         });
 
-        const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB 청크 사이즈
-
+        // 청크 업로드 요청 데이터
         for (let i = 0; i < savedResources.length; i++) {
           const file = files[i];
           const uuidFileName = savedResources[i].filename;
@@ -348,6 +347,7 @@ function UploadComponent() {
           const fileTitle =
             titles[i] || file.name.split('.').slice(0, -1).join('.');
 
+          // 청크 업로드 진행
           for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
             const start = chunkIndex * CHUNK_SIZE;
             const end = Math.min(file.size, start + CHUNK_SIZE);
@@ -410,6 +410,7 @@ function UploadComponent() {
           return acc;
         }, {});
 
+        // 인코딩 요청
         await axios.post(
           'http://localhost:8080/api/encoding',
           encodingsWithFileNames,
