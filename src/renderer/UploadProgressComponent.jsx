@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
 

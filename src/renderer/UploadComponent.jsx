@@ -308,16 +308,11 @@ function UploadComponent() {
         const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB 청크 사이즈
 
         for (let i = 0; i < savedResources.length; i++) {
-          const {
-            userFile: file,
-            fileTitle,
-            filename: uuidFileName,
-            fileIndex,
-          } = savedResources[i];
+          const file = files[i];
+          const uuidFileName = savedResources[i].filename;
           const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-          console.log(file);
-          console.log(fileTitle);
-          console.log(fileIndex);
+          const fileTitle =
+            titles[i] || file.name.split('.').slice(0, -1).join('.');
 
           for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
             const start = chunkIndex * CHUNK_SIZE;
@@ -380,6 +375,10 @@ function UploadComponent() {
           };
           return acc;
         }, {});
+
+        // 콘솔에 보기 좋게 출력
+        console.log('원본 파일 이름과 인코딩 설정:');
+        console.log(JSON.stringify(encodingsWithFileNames, null, 2));
 
         await axios.post(
           'http://localhost:8080/api/encoding',
