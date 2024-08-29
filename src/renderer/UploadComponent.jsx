@@ -226,82 +226,166 @@ function UploadComponent() {
     });
   };
 
-  // 업로드 버튼 함수
-  const handleUpload = async () => {
-    // 알림창 표시
-    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
-    navigate('/uploadProgress'); // 페이지 이동
+  // 메타데이터 저장 함수
+  const saveMetadata = async (files, titles, resolutions) => {
+    const formData = new FormData();
+    const dtos = [];
 
-    try {
-      const formData = new FormData();
-      const dtos = [];
+    await Promise.all(
+      files.map(async (file, index) => {
+        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
+        const format = file.name.split('.').pop().toLowerCase();
+        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
+        const fileTitle =
+          titles[index] || file.name.split('.').slice(0, -1).join('.');
+        // 해상도 문자열 생성
+        const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+        // 재생시간
+        const playTime = resolutions[index].playtime || '0';
+        // 파일 타입
+        const resourceType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
 
-      // 파일과 관련된 데이터들을 formData에 추가
-      await Promise.all(
-        files.map(async (file, index) => {
-          // 원본 파일의 확장자 추출 (확장자에서 . 제거)
-          const format = file.name.split('.').pop().toLowerCase();
-          // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
-          const fileTitle =
-            titles[index] || file.name.split('.').slice(0, -1).join('.');
-          // 해상도 문자열 생성
-          const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
-          // 재생시간
-          const playTime = resolutions[index].playtime || '0';
-          // 파일 타입
-          const resourceType = file.type.startsWith('image/')
-            ? 'IMAGE'
-            : 'VIDEO';
+        // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
+        localStorage.setItem(
+          `uploadProgress_${fileTitle}`,
+          JSON.stringify({
+            progress: 0,
+            previewUrl:
+              resourceType === 'IMAGE'
+                ? await fileToBase64(file)
+                : 'video-icon',
+          }),
+        );
 
-          // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
-          localStorage.setItem(
-            `uploadProgress_${fileTitle}`,
-            JSON.stringify({
-              progress: 0,
-              previewUrl:
-                resourceType === 'IMAGE'
-                  ? await fileToBase64(file)
-                  : 'video-icon',
-            }),
-          );
+        // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
+        const dto = {
+          fileTitle: fileTitle,
+          playTime: playTime,
+          format: format,
+          resolution: resolution,
+          status: 'UPLOADING',
+          resourceType: resourceType,
+        };
 
-          // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
-          const dto = {
-            fileTitle: fileTitle,
-            playTime: playTime,
-            format: format,
-            resolution: resolution,
-            status: 'UPLOADING',
-            resourceType: resourceType,
-          };
+        dtos.push(dto); // DTO 리스트에 추가
+        formData.append('files', file); // 파일 자체를 추가
+      }),
+    );
 
-          dtos.push(dto); // DTO 리스트에 추가
-          formData.append('files', file); // 파일 자체를 추가
-        }),
-      );
+    // DTO 리스트를 JSON 배열로 변환하여 전송
+    formData.append(
+      'dtos',
+      new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
+    );
 
-      // DTO 리스트를 JSON 배열로 변환하여 전송
-      formData.append(
-        'dtos',
-        new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
-      );
+    return axios.post('http://localhost:8080/api/filedatasave', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  };
 
-      // 데이터베이스 저장 메서드
-      const saveResponse = await axios.post(
-        'http://localhost:8080/api/filedatasave',
-        formData,
+  // 청크 업로드 함수
+  const uploadChunks = async (file, savedResource, fileTitle) => {
+    const uuidFileName = savedResource.filename;
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+
+    const chunkProgress = Array.from({ length: totalChunks }, (_, idx) => ({
+      chunkIndex: idx,
+      status: 'PENDING',
+    }));
+
+    localStorage.setItem(
+      `chunkProgress_${fileTitle}`,
+      JSON.stringify(chunkProgress),
+    );
+
+    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
+
+      const chunkFormData = new FormData();
+      chunkFormData.append('file', chunk);
+      chunkFormData.append('fileName', uuidFileName);
+      chunkFormData.append('chunkIndex', chunkIndex);
+      chunkFormData.append('totalChunks', totalChunks);
+
+      const response = await axios.post(
+        'http://localhost:8080/api/upload/chunk',
+        chunkFormData,
         {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.min(
+              100,
+              Math.round(
+                ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) / file.size) *
+                  100,
+              ),
+            );
+
+            const existingData =
+              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
+              {};
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ ...existingData, progress: percentCompleted }),
+            );
+
+            const chunkProgress = JSON.parse(
+              localStorage.getItem(`chunkProgress_${fileTitle}`),
+            );
+            chunkProgress[chunkIndex].status = 'UPLOADED';
+            localStorage.setItem(
+              `chunkProgress_${fileTitle}`,
+              JSON.stringify(chunkProgress),
+            );
+          },
         },
       );
 
+      if (response.status !== 200) {
+        throw new Error('파일 청크 업로드 실패');
+      }
+    }
+  };
+
+  // 인코딩 요청 함수
+  const requestEncoding = async (files, savedResources, encodings, titles) => {
+    const encodingsWithFileNames = files.reduce((acc, file, index) => {
+      acc[savedResources[index].filename] = {
+        encodings: encodings[index],
+        title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
+      };
+      return acc;
+    }, {});
+
+    return axios.post(
+      'http://localhost:8080/api/encoding',
+      encodingsWithFileNames,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  };
+
+  // 업로드 버튼 함수 리팩토링
+  const handleUpload = async () => {
+    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
+    navigate('/uploadProgress');
+
+    try {
+      const saveResponse = await saveMetadata(files, titles, resolutions);
+
       if (saveResponse.status === 200) {
-        // 서버에서 반환된 DTO 리스트
         const savedResources = saveResponse.data;
 
-        // 파일 제목과 파일 객체를 매핑
+        // 파일 제목과 파일 객체 매핑
         const fileTitleMap = files.reduce((acc, file, index) => {
           const title =
             titles[index] || file.name.split('.').slice(0, -1).join('.');
@@ -309,122 +393,26 @@ function UploadComponent() {
           return acc;
         }, {});
 
-        // 파일 제목을 기준으로 정렬
         savedResources.sort((a, b) => {
-          // fileTitle을 통해 파일 제목과 매칭
-          const aTitle = Object.keys(fileTitleMap).find(
-            (title) => title === a.fileTitle,
-          );
-          const bTitle = Object.keys(fileTitleMap).find(
-            (title) => title === b.fileTitle,
-          );
-
-          const aIndex = files.indexOf(fileTitleMap[aTitle]);
-          const bIndex = files.indexOf(fileTitleMap[bTitle]);
-
+          const aIndex = files.indexOf(fileTitleMap[a.fileTitle]);
+          const bIndex = files.indexOf(fileTitleMap[b.fileTitle]);
           return aIndex - bIndex;
         });
 
-        // 파일 콘솔
-        files.forEach((file, index) => {
-          console.log(`파일 ${index}:`, {
-            name: file.name,
-          });
-        });
-
-        // 저장된 dto 콘솔
-        savedResources.forEach((resource, index) => {
-          console.log(`리턴값 ${index}:`, {
-            filetitle: resource.fileTitle,
-          });
-        });
-
-        // 청크 업로드 요청 데이터
+        // 청크 업로드 진행
         for (let i = 0; i < savedResources.length; i++) {
           const file = files[i];
-          const uuidFileName = savedResources[i].filename;
-          const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
           const fileTitle =
             titles[i] || file.name.split('.').slice(0, -1).join('.');
-
-          // 청크 업로드 진행
-          for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-            const start = chunkIndex * CHUNK_SIZE;
-            const end = Math.min(file.size, start + CHUNK_SIZE);
-            const chunk = file.slice(start, end);
-
-            const chunkFormData = new FormData();
-            chunkFormData.append('file', chunk);
-            chunkFormData.append('fileName', uuidFileName);
-            chunkFormData.append('chunkIndex', chunkIndex);
-            chunkFormData.append('totalChunks', totalChunks);
-
-            const response = await axios.post(
-              'http://localhost:8080/api/upload/chunk',
-              chunkFormData,
-              {
-                headers: {
-                  'Content-Type': 'multipart/form-data',
-                },
-                onUploadProgress: (progressEvent) => {
-                  const percentCompleted = Math.min(
-                    100,
-                    Math.round(
-                      ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
-                        file.size) *
-                        100,
-                    ),
-                  );
-
-                  // 기존 로컬스토리지 데이터 가져오기
-                  const existingData =
-                    JSON.parse(
-                      localStorage.getItem(`uploadProgress_${fileTitle}`),
-                    ) || {};
-
-                  // 업데이트된 데이터로 로컬스토리지 업데이트
-                  localStorage.setItem(
-                    `uploadProgress_${fileTitle}`,
-                    JSON.stringify({
-                      ...existingData,
-                      progress: percentCompleted,
-                    }),
-                  );
-                },
-              },
-            );
-
-            if (response.status !== 200) {
-              throw new Error('파일 청크 업로드 실패');
-            }
-          }
+          await uploadChunks(file, savedResources[i], fileTitle);
         }
 
-        // 인코딩 작업 요청
-        // 인코딩 설정과 원본 파일 이름을 매핑
-        const encodingsWithFileNames = files.reduce((acc, file, index) => {
-          acc[savedResources[index].filename] = {
-            encodings: encodings[index],
-            title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
-          };
-          return acc;
-        }, {});
-
         // 인코딩 요청
-        await axios.post(
-          'http://localhost:8080/api/encoding',
-          encodingsWithFileNames,
-          {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          },
-        );
+        await requestEncoding(files, savedResources, encodings, titles);
 
         setUploadStatus('업로드가 완료되었습니다.');
       }
     } catch (error) {
-      // 업로드 실패시 처리
       console.log(error.message);
     }
   };
