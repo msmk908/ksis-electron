@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
@@ -8,11 +8,11 @@ function UploadComponent() {
   const [titles, setTitles] = useState({}); // 파일 제목 저장
   const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
-  const [uploadStatus, setUploadStatus] = useState(''); // 업로드 상태
   const fileInputRef = useRef(null); // 파일첨부 기능
   const navigate = useNavigate(); // 네비게이트 훅 사용
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const cancelTokens = new Map(); // 취소 토큰 저장
+  const [pausedFiles, setPausedFiles] = useState(new Set()); // 일시정지 파일 상태
 
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
@@ -397,7 +397,16 @@ function UploadComponent() {
   // 업로드 버튼 함수
   const handleUpload = async () => {
     window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
-    navigate('/uploadProgress');
+    navigate('/uploadProgress', {
+      state: {
+        files,
+        titles,
+        encodings,
+        resolutions,
+        cancelTokens,
+        pausedFiles,
+      },
+    }); // 페이지 이동
 
     try {
       const saveResponse = await saveMetadata(files, titles, resolutions);
@@ -448,8 +457,6 @@ function UploadComponent() {
 
         // 인코딩 요청
         await requestEncoding(files, savedResources, encodings, titles);
-
-        setUploadStatus('업로드가 완료되었습니다.');
       }
     } catch (error) {
       console.log(error.message);
@@ -605,7 +612,6 @@ function UploadComponent() {
       >
         Upload
       </button>
-      <p>{uploadStatus}</p>
     </div>
   );
 }

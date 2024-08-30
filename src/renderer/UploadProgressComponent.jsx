@@ -1,10 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
+import axios from 'axios';
 
 function UploadProgressComponent() {
+  const location = useLocation();
+  const {
+    files = [],
+    titles = {},
+    encodings = {},
+    resolutions = {},
+    cancelTokens = new Map(),
+    pausedFiles = new Set(),
+  } = location.state || {};
   const [progress, setProgress] = useState({});
-  const [pausedFiles, setPausedFiles] = useState(new Set());
+  const [pausedFilesState, setPausedFilesState] = useState(pausedFiles);
 
   useEffect(() => {
     const updateProgress = () => {
@@ -32,6 +43,37 @@ function UploadProgressComponent() {
     return () => clearInterval(interval);
   }, []);
 
+  // 일시정지 기능
+  const pauseUpload = (fileName) => {
+    // 일시정지 상태를 로컬스토리지에 저장
+    localStorage.setItem(`${fileName}_paused`, 'true');
+
+    // 요청 취소
+    if (cancelTokens.has(fileName)) {
+      cancelTokens.get(fileName).cancel();
+    }
+  };
+
+  // 재개 기능
+  const resumeUpload = async (fileName) => {
+    // 일시정지 상태를 로컬스토리지에서 제거
+    localStorage.removeItem(`${fileName}_paused`);
+
+    // 취소 토큰을 새로 생성
+    if (cancelTokens.has(fileName)) {
+      cancelTokens.set(fileName, axios.CancelToken.source());
+    }
+
+    const file = files.find((f) => titles[files.indexOf(f)] === fileName);
+    const savedResource = JSON.parse(
+      localStorage.getItem(`chunkProgress_${fileName}`),
+    );
+
+    if (file && savedResource) {
+      await uploadChunks(file, savedResource, fileName);
+    }
+  };
+
   // 삭제 버튼 클릭
   const handleDelete = (fileName) => {
     localStorage.removeItem(`uploadProgress_${fileName}`);
@@ -44,17 +86,19 @@ function UploadProgressComponent() {
   };
 
   // 일시정지 및 재개 버튼 클릭
-  const handlePauseResume = (fileName) => {
-    setPausedFiles((prevPausedFiles) => {
+  const handlePauseResume = async (fileName) => {
+    setPausedFilesState((prevPausedFiles) => {
       const updatedPausedFiles = new Set(prevPausedFiles);
       if (updatedPausedFiles.has(fileName)) {
         // 파일이 일시정지된 상태에서 클릭한 경우, 일시정지 해제
         updatedPausedFiles.delete(fileName);
         // 재개 로직 추가
+        resumeUpload(fileName);
       } else {
         // 파일이 업로드 중인 상태에서 클릭한 경우, 일시정지
         updatedPausedFiles.add(fileName);
         // 일시정지 로직 추가
+        pauseUpload(fileName);
       }
       return updatedPausedFiles;
     });
