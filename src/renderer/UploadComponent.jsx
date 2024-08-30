@@ -12,6 +12,7 @@ function UploadComponent() {
   const fileInputRef = useRef(null); // 파일첨부 기능
   const navigate = useNavigate(); // 네비게이트 훅 사용
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
+  const cancelTokens = new Map(); // 취소 토큰 저장
 
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
@@ -289,18 +290,21 @@ function UploadComponent() {
   const uploadChunks = async (file, savedResource, fileTitle) => {
     const uuidFileName = savedResource.filename;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let chunkIndex = savedResource.chunkIndex || 0;
 
-    const chunkProgress = Array.from({ length: totalChunks }, (_, idx) => ({
-      chunkIndex: idx,
-      status: 'PENDING',
-    }));
+    // 현재 업로드 요청을 취소할 수 있는 토큰 생성
+    if (!cancelTokens.has(fileTitle)) {
+      cancelTokens.set(fileTitle, axios.CancelToken.source());
+    }
 
-    localStorage.setItem(
-      `chunkProgress_${fileTitle}`,
-      JSON.stringify(chunkProgress),
-    );
+    const cancelToken = cancelTokens.get(fileTitle).token;
 
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+    while (chunkIndex < totalChunks) {
+      if (pausedFiles.has(fileTitle)) {
+        // 업로드가 일시정지 상태일 때, 청크 업로드를 중단
+        return;
+      }
+
       const start = chunkIndex * CHUNK_SIZE;
       const end = Math.min(file.size, start + CHUNK_SIZE);
       const chunk = file.slice(start, end);
@@ -311,44 +315,60 @@ function UploadComponent() {
       chunkFormData.append('chunkIndex', chunkIndex);
       chunkFormData.append('totalChunks', totalChunks);
 
-      const response = await axios.post(
-        'http://localhost:8080/api/upload/chunk',
-        chunkFormData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
+      try {
+        const response = await axios.post(
+          'http://localhost:8080/api/upload/chunk',
+          chunkFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            cancelToken: cancelToken,
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.min(
+                100,
+                Math.round(
+                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
+                    file.size) *
+                    100,
+                ),
+              );
+
+              // 로컬스토리지에 업로드 진행퍼센트 업데이트
+              const existingData =
+                JSON.parse(
+                  localStorage.getItem(`uploadProgress_${fileTitle}`),
+                ) || {};
+              localStorage.setItem(
+                `uploadProgress_${fileTitle}`,
+                JSON.stringify({ ...existingData, progress: percentCompleted }),
+              );
+
+              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+              const chunkProgress = JSON.parse(
+                localStorage.getItem(`chunkProgress_${fileTitle}`),
+              );
+              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+              localStorage.setItem(
+                `chunkProgress_${fileTitle}`,
+                JSON.stringify(chunkProgress),
+              );
+            },
           },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.min(
-              100,
-              Math.round(
-                ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) / file.size) *
-                  100,
-              ),
-            );
+        );
 
-            const existingData =
-              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
-              {};
-            localStorage.setItem(
-              `uploadProgress_${fileTitle}`,
-              JSON.stringify({ ...existingData, progress: percentCompleted }),
-            );
+        if (response.status !== 200) {
+          throw new Error('파일 청크 업로드 실패');
+        }
 
-            const chunkProgress = JSON.parse(
-              localStorage.getItem(`chunkProgress_${fileTitle}`),
-            );
-            chunkProgress[chunkIndex].status = 'UPLOADED';
-            localStorage.setItem(
-              `chunkProgress_${fileTitle}`,
-              JSON.stringify(chunkProgress),
-            );
-          },
-        },
-      );
-
-      if (response.status !== 200) {
-        throw new Error('파일 청크 업로드 실패');
+        chunkIndex++;
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          console.log('Upload cancelled');
+          break;
+        } else {
+          throw error;
+        }
       }
     }
   };
@@ -374,7 +394,7 @@ function UploadComponent() {
     );
   };
 
-  // 업로드 버튼 함수 리팩토링
+  // 업로드 버튼 함수
   const handleUpload = async () => {
     window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
     navigate('/uploadProgress');
@@ -397,6 +417,25 @@ function UploadComponent() {
           const aIndex = files.indexOf(fileTitleMap[a.fileTitle]);
           const bIndex = files.indexOf(fileTitleMap[b.fileTitle]);
           return aIndex - bIndex;
+        });
+
+        // 로컬스토리지에 각 파일의 진행 상항과 필요한 데이터를 저장
+        savedResources.forEach((resource, index) => {
+          const fileTitle =
+            titles[index] ||
+            files[index].name.split('.').slice(0, -1).join('.');
+          const filePath = files[index].path;
+          const encoding = encodings[index];
+
+          localStorage.setItem(
+            `chunkProgress_${fileTitle}`,
+            JSON.stringify({
+              chunkIndex: 0,
+              filePath: filePath,
+              savedResources: resource,
+              encodings: encoding,
+            }),
+          );
         });
 
         // 청크 업로드 진행

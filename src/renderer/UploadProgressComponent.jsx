@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
 
 function UploadProgressComponent() {
   const [progress, setProgress] = useState({});
+  const [pausedFiles, setPausedFiles] = useState(new Set());
 
   useEffect(() => {
     const updateProgress = () => {
@@ -32,9 +32,33 @@ function UploadProgressComponent() {
     return () => clearInterval(interval);
   }, []);
 
-  const sortedProgressEntries = Object.entries(progress).sort(([a], [b]) =>
-    b.localeCompare(a),
-  );
+  // 삭제 버튼 클릭
+  const handleDelete = (fileName) => {
+    localStorage.removeItem(`uploadProgress_${fileName}`);
+    localStorage.removeItem(`chunkProgress_${fileName}`);
+    setProgress((prevProgress) => {
+      const newProgress = { ...prevProgress };
+      delete newProgress[fileName];
+      return newProgress;
+    });
+  };
+
+  // 일시정지 및 재개 버튼 클릭
+  const handlePauseResume = (fileName) => {
+    setPausedFiles((prevPausedFiles) => {
+      const updatedPausedFiles = new Set(prevPausedFiles);
+      if (updatedPausedFiles.has(fileName)) {
+        // 파일이 일시정지된 상태에서 클릭한 경우, 일시정지 해제
+        updatedPausedFiles.delete(fileName);
+        // 재개 로직 추가
+      } else {
+        // 파일이 업로드 중인 상태에서 클릭한 경우, 일시정지
+        updatedPausedFiles.add(fileName);
+        // 일시정지 로직 추가
+      }
+      return updatedPausedFiles;
+    });
+  };
 
   return (
     <div className="p-4">
@@ -58,11 +82,41 @@ function UploadProgressComponent() {
           </div>
           <div className="w-3/4">
             <p className="mb-1 text-lg">{fileName}</p>
-            <div className="w-full bg-gray-300 rounded-full h-4">
-              <div
-                className="bg-blue-600 h-4 rounded-full"
-                style={{ width: `${progress}%` }}
-              ></div>
+            <div className="flex items-center">
+              <div className="w-11/12 bg-gray-300 rounded-full h-4 relative">
+                <div
+                  className={`h-4 rounded-full ${
+                    progress === 100 ? 'bg-green-600' : 'bg-blue-600'
+                  }`}
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              {progress < 100 && (
+                <div className="w-1/12 text-right pl-2">
+                  <button
+                    onClick={() => handlePauseResume(fileName)}
+                    className={`${
+                      pausedFiles.has(fileName)
+                        ? 'bg-yellow-500 hover:bg-yellow-700'
+                        : 'bg-blue-500 hover:bg-blue-700'
+                    } text-white font-bold px-2 py-1 rounded-full transition duration-300 ease-in-out`}
+                    title={pausedFiles.has(fileName) ? 'Resume' : 'Pause'}
+                  >
+                    {pausedFiles.has(fileName) ? '▶️' : '⏸️'}
+                  </button>
+                </div>
+              )}
+              {progress === 100 && (
+                <div className="w-1/12 text-right pl-2">
+                  <button
+                    onClick={() => handleDelete(fileName)}
+                    className="bg-red-500 text-white font-bold px-2 py-1 rounded-full hover:bg-red-700 transition duration-300 ease-in-out"
+                    title="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
             <p className="text-right text-sm mt-1">{progress}%</p>
           </div>
