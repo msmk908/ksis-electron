@@ -9,10 +9,10 @@ function UploadComponent() {
   const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const fileInputRef = useRef(null); // 파일첨부 기능
-  const navigate = useNavigate(); // 네비게이트 훅 사용
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const cancelTokens = new Map(); // 취소 토큰 저장
   const [pausedFiles, setPausedFiles] = useState(new Set()); // 일시정지 파일 상태
+  const navigate = useNavigate(); // 네비게이트 훅 사용
 
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {

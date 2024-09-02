@@ -1,5 +1,6 @@
 import os from 'node:os';
 import path from 'path';
+import fs from 'fs'; // fs 모듈 추가
 import { app, BrowserWindow, shell, ipcMain, Tray, Menu } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
@@ -153,6 +154,18 @@ const createWindow = async () => {
   // eslint-disable-next-line
   new AppUpdater();
 };
+
+// 파일을 가져오는 ipc통신
+ipcMain.handle('get-file', async (event, filePath) => {
+  try {
+    // 파일 데이터를 읽어옴
+    const fileBuffer = fs.readFileSync(filePath);
+    return fileBuffer; // 파일 데이터를 반환
+  } catch (error) {
+    console.error('파일을 읽는 중 오류 발생:', error);
+    throw error;
+  }
+});
 
 ipcMain.handle('get-mac-address', () => {
   const networkInterfaces = os.networkInterfaces();

@@ -5,6 +5,7 @@ import videoIcon from '../../assets/icons/video-file.png';
 import axios from 'axios';
 
 function UploadProgressComponent() {
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const location = useLocation();
   const {
     files = [],
@@ -17,6 +18,7 @@ function UploadProgressComponent() {
   const [progress, setProgress] = useState({});
   const [pausedFilesState, setPausedFilesState] = useState(pausedFiles);
 
+  // 유즈 이펙트
   useEffect(() => {
     const updateProgress = () => {
       const updatedProgress = {};
@@ -43,6 +45,95 @@ function UploadProgressComponent() {
     return () => clearInterval(interval);
   }, []);
 
+  // 청크 업로드 함수
+  const uploadChunks = async (file, savedResource, fileTitle, chunkindex) => {
+    console.log('청크 업로드 함수 진입');
+    const uuidFileName = savedResource.filename;
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let chunkIndex = chunkindex || 0;
+
+    // 현재 업로드 요청을 취소할 수 있는 토큰 생성
+    if (!cancelTokens.has(fileTitle)) {
+      cancelTokens.set(fileTitle, axios.CancelToken.source());
+    }
+
+    const cancelToken = cancelTokens.get(fileTitle).token;
+
+    while (chunkIndex < totalChunks) {
+      if (pausedFiles.has(fileTitle)) {
+        // 업로드가 일시정지 상태일 때, 청크 업로드를 중단
+        return;
+      }
+
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
+
+      const chunkFormData = new FormData();
+      chunkFormData.append('file', chunk);
+      chunkFormData.append('fileName', uuidFileName);
+      chunkFormData.append('chunkIndex', chunkIndex);
+      chunkFormData.append('totalChunks', totalChunks);
+
+      try {
+        console.log('청크 업로드 요청 보내기');
+        const response = await axios.post(
+          'http://localhost:8080/api/upload/chunk',
+          chunkFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            cancelToken: cancelToken,
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.min(
+                100,
+                Math.round(
+                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
+                    file.size) *
+                    100,
+                ),
+              );
+
+              // 로컬스토리지에 업로드 진행퍼센트 업데이트
+              const existingData =
+                JSON.parse(
+                  localStorage.getItem(`uploadProgress_${fileTitle}`),
+                ) || {};
+              localStorage.setItem(
+                `uploadProgress_${fileTitle}`,
+                JSON.stringify({ ...existingData, progress: percentCompleted }),
+              );
+
+              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+              const chunkProgress = JSON.parse(
+                localStorage.getItem(`chunkProgress_${fileTitle}`),
+              );
+              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+              localStorage.setItem(
+                `chunkProgress_${fileTitle}`,
+                JSON.stringify(chunkProgress),
+              );
+            },
+          },
+        );
+
+        if (response.status !== 200) {
+          throw new Error('파일 청크 업로드 실패');
+        }
+
+        chunkIndex++;
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          console.log('Upload cancelled');
+          break;
+        } else {
+          throw error;
+        }
+      }
+    }
+  };
+
   // 일시정지 기능
   const pauseUpload = (fileName) => {
     // 일시정지 상태를 로컬스토리지에 저장
@@ -64,13 +155,40 @@ function UploadProgressComponent() {
       cancelTokens.set(fileName, axios.CancelToken.source());
     }
 
-    const file = files.find((f) => titles[files.indexOf(f)] === fileName);
-    const savedResource = JSON.parse(
+    const chunkProgress = JSON.parse(
       localStorage.getItem(`chunkProgress_${fileName}`),
     );
 
-    if (file && savedResource) {
-      await uploadChunks(file, savedResource, fileName);
+    const chunkindex = chunkProgress.chunkIndex;
+
+    const savedResource = chunkProgress.savedResources;
+
+    // 로컬스토리지에서 파일 경로를 가져옴
+    const filePath = chunkProgress?.filePath;
+
+    if (filePath) {
+      try {
+        // ipcRenderer를 통해 파일 데이터를 가져옴
+        const fileBuffer = await window.electron.ipcRenderer.invoke(
+          'get-file',
+          filePath,
+        );
+
+        // 가져온 파일 데이터를 Blob 또는 File 객체로 변환
+        const file = new File([fileBuffer], savedResource.filename, {
+          type: savedResource.format,
+        });
+
+        // 업로드 재개
+        if (file && savedResource) {
+          console.log('다시 업로드');
+          await uploadChunks(file, savedResource, fileName, chunkindex);
+        }
+      } catch (error) {
+        console.error('파일을 가져오는 중 오류 발생:', error);
+      }
+    } else {
+      console.error('파일 경로를 찾을 수 없습니다.');
     }
   };
 

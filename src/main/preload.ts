@@ -1,7 +1,7 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-export type Channels = 'ipc-example';
+export type Channels = 'ipc-example' | 'get-file';
 
 const electronHandler = {
   ipcRenderer: {
@@ -29,12 +29,17 @@ const electronHandler = {
     // IPC 요청을 보내고 응답을 받는 함수 (비동기)
     invoke(channel: Channels, ...args: unknown[]) {
       return ipcRenderer.invoke(channel, ...args);
-    }
+    },
   },
 
   getMacAddress() {
     return ipcRenderer.invoke('get-mac-address');
-  }
+  },
+
+  // 파일을 가져오는 함수 추가
+  getFile(filePath: string) {
+    return ipcRenderer.invoke('get-file', filePath);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
