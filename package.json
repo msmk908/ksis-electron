@@ -179,6 +179,12 @@
     "productName": "ElectronReact",
     "appId": "org.erb.ElectronReact",
     "asar": true,
+    "protocols": {
+      "name": "Your App Name",
+      "schemes": [
+        "ksis"
+      ]
+    },
     "asarUnpack": "**\\*.{node,dll}",
     "files": [
       "dist",

@@ -149,25 +149,36 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
 });
 
 app.on('open-url', (event, url) => {
-  if (mainWindow) {
-    mainWindow.webContents.send('open-url', url);
-  } else {
-    app.once('ready', () => {
-      createWindow();
-      app.whenReady().then(() => {
-        if (mainWindow) {
-          mainWindow.webContents.send('open-url', url);
-        }
+  if (url.startsWith('ksis://login')) {
+    if (mainWindow) {
+      mainWindow.loadURL(resolveHtmlPath('index.html')); // 로그인 페이지를 /로 설정합니다.
+      mainWindow.show();
+      mainWindow.focus();
+    } else {
+      app.once('ready', () => {
+        createWindow();
+        app.whenReady().then(() => {
+          if (mainWindow) {
+            mainWindow.loadURL(resolveHtmlPath('index.html')); // 로그인 페이지를 /로 설정합니다.
+            mainWindow.show();
+            mainWindow.focus();
+          }
+        });
       });
-    });
-  }
-});
-
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
+    }
+  } else {
+    if (mainWindow) {
+      mainWindow.webContents.send('open-url', url);
+    } else {
+      app.once('ready', () => {
+        createWindow();
+        app.whenReady().then(() => {
+          if (mainWindow) {
+            mainWindow.webContents.send('open-url', url);
+          }
+        });
+      });
+    }
   }
 });
 
@@ -182,3 +193,5 @@ app
     });
   })
   .catch(console.log);
+
+  

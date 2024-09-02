@@ -28,6 +28,7 @@ const Login = () => {
                 if (data.accessToken) {
                     localStorage.setItem('accessToken', data.accessToken);
                     localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('accountId', accountId);
                     alert('Login successful');
                     navigate('/upload');
                     // 쿼리 파라미터로 포함한 URL 생성
