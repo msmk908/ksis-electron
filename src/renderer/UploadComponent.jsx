@@ -362,9 +362,21 @@ function UploadComponent() {
         }
 
         chunkIndex++;
+
+        // 청크 업로드가 완료된 경우, 상태를 업데이트
+        if (chunkIndex >= totalChunks) {
+          const existingData =
+            JSON.parse(localStorage.getItem(`chunkProgress_${fileTitle}`)) ||
+            {};
+          existingData.uploadCompleted = true;
+          localStorage.setItem(
+            `chunkProgress_${fileTitle}`,
+            JSON.stringify(existingData),
+          );
+        }
       } catch (error) {
         if (axios.isCancel(error)) {
-          console.log('Upload cancelled');
+          window.alert('업로드 중지');
           break;
         } else {
           throw error;
@@ -455,8 +467,20 @@ function UploadComponent() {
           await uploadChunks(file, savedResources[i], fileTitle);
         }
 
-        // 인코딩 요청
-        await requestEncoding(files, savedResources, encodings, titles);
+        // 모든 파일의 청크 업로드가 완료된 후 인코딩 요청
+        const allFilesUploaded = savedResources.every((resource) => {
+          const progress = JSON.parse(
+            localStorage.getItem(`chunkProgress_${resource.fileTitle}`),
+          );
+          return progress && progress.uploadCompleted;
+        });
+
+        if (allFilesUploaded) {
+          // 인코딩 요청
+          await requestEncoding(files, savedResources, encodings, titles);
+        } else {
+          console.log('청크 업로드 미완료');
+        }
       }
     } catch (error) {
       console.log(error.message);

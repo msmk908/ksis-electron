@@ -18,7 +18,7 @@ function UploadProgressComponent() {
   const [progress, setProgress] = useState({});
   const [pausedFilesState, setPausedFilesState] = useState(pausedFiles);
 
-  // 유즈 이펙트
+  // 컴포넌트가 마운트될 때 로컬스토리지에서 업로드 퍼센트 읽어오는 코드
   useEffect(() => {
     const updateProgress = () => {
       const updatedProgress = {};
@@ -45,9 +45,27 @@ function UploadProgressComponent() {
     return () => clearInterval(interval);
   }, []);
 
+  // 컴포넌트가 마운트될 때 로컬스토리지에서 일시정지 상태를 읽어오는 코드
+  useEffect(() => {
+    const readPausedFiles = () => {
+      const updatedPausedFiles = new Set();
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.endsWith('_paused') && localStorage.getItem(key) === 'true') {
+          const fileName = key.replace('_paused', '');
+          updatedPausedFiles.add(fileName);
+        }
+      }
+
+      setPausedFilesState(updatedPausedFiles);
+    };
+
+    readPausedFiles();
+  }, []);
+
   // 청크 업로드 함수
   const uploadChunks = async (file, savedResource, fileTitle, chunkindex) => {
-    console.log('청크 업로드 함수 진입');
     const uuidFileName = savedResource.filename;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let chunkIndex = chunkindex || 0;
@@ -76,7 +94,6 @@ function UploadProgressComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        console.log('청크 업로드 요청 보내기');
         const response = await axios.post(
           'http://localhost:8080/api/upload/chunk',
           chunkFormData,
@@ -125,7 +142,7 @@ function UploadProgressComponent() {
         chunkIndex++;
       } catch (error) {
         if (axios.isCancel(error)) {
-          console.log('Upload cancelled');
+          window.alert('업로드 중지');
           break;
         } else {
           throw error;
@@ -181,7 +198,6 @@ function UploadProgressComponent() {
 
         // 업로드 재개
         if (file && savedResource) {
-          console.log('다시 업로드');
           await uploadChunks(file, savedResource, fileName, chunkindex);
         }
       } catch (error) {
@@ -258,13 +274,13 @@ function UploadProgressComponent() {
                   <button
                     onClick={() => handlePauseResume(fileName)}
                     className={`${
-                      pausedFiles.has(fileName)
+                      pausedFilesState.has(fileName)
                         ? 'bg-yellow-500 hover:bg-yellow-700'
                         : 'bg-blue-500 hover:bg-blue-700'
                     } text-white font-bold px-2 py-1 rounded-full transition duration-300 ease-in-out`}
-                    title={pausedFiles.has(fileName) ? 'Resume' : 'Pause'}
+                    title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
                   >
-                    {pausedFiles.has(fileName) ? '▶️' : '⏸️'}
+                    {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
                   </button>
                 </div>
               )}
