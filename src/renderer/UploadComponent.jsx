@@ -1,176 +1,505 @@
-// src/UploadComponent.jsx
 import React, { useState, useRef } from 'react';
 import axios from 'axios';
-import 'tailwindcss/tailwind.css'; // 테일윈드 css 적용
+import 'tailwindcss/tailwind.css';
+import { useNavigate } from 'react-router-dom';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
   const [titles, setTitles] = useState({}); // 파일 제목 저장
-  const [formats, setFormats] = useState({}); // 파일 포맷 저장
-  const [resolutions, setResolutions] = useState({}); // 파일 해상도 저장
-  const [uploadStatus, setUploadStatus] = useState(''); // 업로드 상태
+  const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
+  const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const fileInputRef = useRef(null); // 파일첨부 기능
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
+  const navigate = useNavigate(); // 네비게이트 훅 사용
 
-  const CHUNK_SIZE = 1024 * 1024; // 청크 사이즈 1MB
-
-  // 첨부한 파일 컨트롤
-  const handleFileChange = (e) => {
+  // 첨부파일 추가 메서드
+  const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
-    setFiles([...files, ...newFiles]);
+    const newResolutions = await getFileInfo(newFiles, files.length); // 파일 인덱스를 전달
+
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles, ...newFiles];
+      setResolutions((prevResolutions) => ({
+        ...prevResolutions,
+        ...newResolutions,
+      }));
+
+      const newEncodings = newFiles.reduce((acc, file, index) => {
+        const fileIndex = prevFiles.length + index;
+        const isImage = file.type.startsWith('image/');
+        acc[fileIndex] = [
+          { format: isImage ? 'jpg' : 'mp4', resolution: '1080p' },
+        ];
+        return acc;
+      }, {});
+
+      setEncodings((prevEncodings) => ({
+        ...prevEncodings,
+        ...newEncodings,
+      }));
+
+      return updatedFiles;
+    });
   };
 
-  // 드롭으로 파일 컨트롤
-  const handleDrop = (e) => {
+  // 드래그 드롭 메서드
+  const handleDrop = async (e) => {
     e.preventDefault();
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    setFiles((prevFiles) => [...prevFiles, ...droppedFiles]);
+    e.stopPropagation();
+
+    const newFiles = Array.from(e.dataTransfer.files);
+    const newResolutions = await getFileInfo(newFiles, files.length); // 파일 인덱스를 전달
+
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles, ...newFiles];
+      setResolutions((prevResolutions) => ({
+        ...prevResolutions,
+        ...newResolutions,
+      }));
+
+      const newEncodings = newFiles.reduce((acc, file, index) => {
+        const fileIndex = prevFiles.length + index;
+        const isImage = file.type.startsWith('image/');
+        acc[fileIndex] = [
+          { format: isImage ? 'jpg' : 'mp4', resolution: '1080p' },
+        ];
+        return acc;
+      }, {});
+
+      setEncodings((prevEncodings) => ({
+        ...prevEncodings,
+        ...newEncodings,
+      }));
+
+      return updatedFiles;
+    });
   };
 
-  // 드래그 할 때 기본 기능 비활성화
+  // 파일 삭제 핸들러
+  const handleFileDelete = (index) => {
+    setFiles((prevFiles) => {
+      // 삭제할 파일을 제외한 새로운 파일 목록 생성
+      const updatedFiles = prevFiles.filter((_, i) => i !== index);
+
+      // 삭제된 파일의 인덱스에 해당하는 상태만 제거
+      const updatedEncodings = {};
+      const updatedResolutions = {};
+      const updatedTitles = {};
+
+      updatedFiles.forEach((_, i) => {
+        // 기존의 인덱스 맵을 유지
+        updatedEncodings[i] = encodings[i >= index ? i + 1 : i] || [];
+        updatedResolutions[i] = resolutions[i >= index ? i + 1 : i] || {};
+        updatedTitles[i] = titles[i >= index ? i + 1 : i] || '';
+      });
+
+      setEncodings(updatedEncodings);
+      setResolutions(updatedResolutions);
+      setTitles(updatedTitles);
+
+      return updatedFiles;
+    });
+  };
+
   const handleDragOver = (e) => {
     e.preventDefault();
   };
 
-  // 파일 제목 컨트롤
+  // 제목 설정
   const handleTitleChange = (index, e) => {
     const newTitles = { ...titles, [index]: e.target.value };
     setTitles(newTitles);
   };
 
-  // 파일 포맷 컨트롤
-  const handleFormatChange = (index, e) => {
-    const newFormats = { ...formats, [index]: e.target.value };
-    setFormats(newFormats);
+  // 포맷 설정
+  const handleFormatChange = (fileIndex, encodingIndex, e) => {
+    const newEncodings = { ...encodings };
+    newEncodings[fileIndex][encodingIndex].format = e.target.value;
+    setEncodings(newEncodings);
   };
 
-  // 파일 해상도 컨트롤
-  const handleResolutionChange = (index, e) => {
-    const newResolutions = { ...resolutions, [index]: e.target.value };
-    setResolutions(newResolutions);
+  // 해상도 설정
+  const handleResolutionChange = (fileIndex, encodingIndex, e) => {
+    const newEncodings = { ...encodings };
+    newEncodings[fileIndex][encodingIndex].resolution = e.target.value;
+    setEncodings(newEncodings);
   };
 
-  // 클릭 시 파일 선택창 열기
+  // 포맷 해상도 추가
+  const addEncoding = (fileIndex) => {
+    const newEncodings = { ...encodings };
+    newEncodings[fileIndex] = [
+      ...newEncodings[fileIndex],
+      { format: encodings[fileIndex][0].format, resolution: '1080p' }, // 동일한 포맷으로 추가
+    ];
+    setEncodings(newEncodings);
+  };
+
+  // 포맷 해상도 제거
+  const removeEncoding = (fileIndex, encodingIndex) => {
+    const newEncodings = { ...encodings };
+    if (newEncodings[fileIndex].length > 1) {
+      newEncodings[fileIndex].splice(encodingIndex, 1);
+      setEncodings(newEncodings);
+    }
+  };
+
   const handleAreaClick = () => {
     fileInputRef.current.click();
   };
 
-  // 첨부한 파일 클릭 시 선택창 열기 비활성화
   const handleChildClick = (e) => {
     e.stopPropagation();
   };
 
-  // 메타데이터를 서버에 전송
-  const sendFileMetadata = async (file, title, format, resolution) => {
-    const formData = {
-      filename: `${title || file.name}.${file.name.split('.').pop()}`,
-      title: title || file.name,
-      format: format,
-      resolution: resolution,
-      fileSize: file.size,
-      status: 'UPLOADING', // 초기 상태를 UPLOADING으로 설정
-    };
+  // 파일의 정보를 가져오는 함수
+  const getFileInfo = (files, startIndex) => {
+    return Promise.all(
+      files.map((file, index) => {
+        return new Promise((resolve) => {
+          const isImage = file.type.startsWith('image/');
+          const isVideo = file.type.startsWith('video/');
+          const url = URL.createObjectURL(file);
 
-    try {
-      await axios.post('http://localhost:8080/api/upload-metadata', formData);
-    } catch (error) {
-      console.error('Error sending file metadata:', error);
-      throw error;
-    }
+          if (isImage) {
+            const img = new Image();
+            img.onload = () => {
+              resolve({
+                [startIndex + index]: {
+                  width: img.width,
+                  height: img.height,
+                  playtime: null,
+                },
+              });
+              URL.revokeObjectURL(img.src);
+            };
+            img.src = url;
+          } else if (isVideo) {
+            const video = document.createElement('video');
+            video.onloadedmetadata = () => {
+              resolve({
+                [startIndex + index]: {
+                  width: video.videoWidth,
+                  height: video.videoHeight,
+                  playtime: video.duration,
+                },
+              });
+              URL.revokeObjectURL(video.src);
+            };
+            video.onerror = () => {
+              resolve({
+                [startIndex + index]: {
+                  width: null,
+                  height: null,
+                  playtime: null,
+                },
+              });
+              URL.revokeObjectURL(video.src);
+            };
+            video.src = url;
+          } else {
+            resolve({
+              [startIndex + index]: {
+                width: null,
+                height: null,
+                playtime: null,
+              },
+            });
+          }
+        });
+      }),
+    ).then((resolutions) => {
+      return resolutions.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+    });
   };
 
-  // 청크 업로드 엔드포인트
-  const uploadChunk = async (chunk, index, totalChunks, filename) => {
+  // 파일을 base64로 변환하는 함수
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 메타데이터 저장 함수
+  const saveMetadata = async (files, titles, resolutions) => {
     const formData = new FormData();
-    formData.append('chunk', chunk);
-    formData.append('index', index);
-    formData.append('totalChunks', totalChunks);
-    formData.append('filename', filename);
+    const dtos = [];
 
-    try {
-      await axios.post('http://localhost:8080/api/upload-chunk', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-    } catch (error) {
-      console.error(`Error uploading chunk ${index}:`, error);
-      throw error;
-    }
+    await Promise.all(
+      files.map(async (file, index) => {
+        // 원본 파일의 확장자 추출 (확장자에서 . 제거)
+        const format = file.name.split('.').pop().toLowerCase();
+        // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
+        const fileTitle =
+          titles[index] || file.name.split('.').slice(0, -1).join('.');
+        // 해상도 문자열 생성
+        const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
+        // 재생시간
+        const playTime = resolutions[index].playtime || '0';
+        // 파일 타입
+        const resourceType = file.type.startsWith('image/') ? 'IMAGE' : 'VIDEO';
+
+        // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
+        localStorage.setItem(
+          `uploadProgress_${fileTitle}`,
+          JSON.stringify({
+            progress: 0,
+            previewUrl:
+              resourceType === 'IMAGE'
+                ? await fileToBase64(file)
+                : 'video-icon',
+          }),
+        );
+
+        // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
+        const dto = {
+          fileTitle: fileTitle,
+          playTime: playTime,
+          format: format,
+          resolution: resolution,
+          status: 'UPLOADING',
+          resourceType: resourceType,
+        };
+
+        dtos.push(dto); // DTO 리스트에 추가
+        formData.append('files', file); // 파일 자체를 추가
+      }),
+    );
+
+    // DTO 리스트를 JSON 배열로 변환하여 전송
+    formData.append(
+      'dtos',
+      new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
+    );
+
+    return axios.post('http://localhost:8080/api/filedatasave', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
   };
 
-  // 파일 정보를 청크 업로드로 넘겨주는 메서드
-  const uploadFile = async (file, title, format, resolution) => {
+  // 청크 업로드 함수
+  const uploadChunks = async (file, savedResource, fileTitle) => {
+    const uuidFileName = savedResource.filename;
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-    const fileExtension = file.name.split('.').pop(); // 확장자 추출
-    const filename = `${title || file.name}.${fileExtension}`; // 제목과 확장자 결합
+    let chunkIndex = savedResource.chunkIndex || 0;
 
-    try {
-      // 메타데이터 전송
-      await sendFileMetadata(file, title, format, resolution);
-
-      for (let i = 0; i < totalChunks; i++) {
-        const start = i * CHUNK_SIZE;
-        const end = Math.min(start + CHUNK_SIZE, file.size);
-        const chunk = file.slice(start, end);
-
-        await uploadChunk(chunk, i, totalChunks, filename);
+    while (chunkIndex < totalChunks) {
+      const isPaused = localStorage.getItem(`${fileTitle}_paused`) === 'true';
+      if (isPaused) {
+        // 로컬스토리지에 paused 가 true 일 때 정지
+        return;
       }
 
-      return { filename, title, format, resolution };
-    } catch (error) {
-      console.error(`Error uploading file ${filename}:`, error);
-      throw error;
-    }
-  };
+      const start = chunkIndex * CHUNK_SIZE;
+      const end = Math.min(file.size, start + CHUNK_SIZE);
+      const chunk = file.slice(start, end);
 
-  // 업로드 파일 상태 업데이트
-  const updateFileStatus = async (filename, status) => {
-    try {
-      await axios.post('http://localhost:8080/api/update-file-status', {
-        filename,
-        status,
-      });
-    } catch (error) {
-      console.error(`Error updating file status:`, error);
-    }
-  };
+      const chunkFormData = new FormData();
+      chunkFormData.append('file', chunk);
+      chunkFormData.append('fileName', uuidFileName);
+      chunkFormData.append('chunkIndex', chunkIndex);
+      chunkFormData.append('totalChunks', totalChunks);
 
-  // 업로드 버튼 클릭 메서드
-  const handleUpload = async () => {
-    if (files.length === 0) {
-      setUploadStatus('No file selected.');
-      return;
-    }
+      try {
+        const response = await axios.post(
+          'http://localhost:8080/api/upload/chunk',
+          chunkFormData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            onUploadProgress: (progressEvent) => {
+              const percentCompleted = Math.min(
+                100,
+                Math.round(
+                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
+                    file.size) *
+                    100,
+                ),
+              );
 
-    setUploadStatus('Uploading...');
+              // 로컬스토리지에 업로드 진행퍼센트 업데이트
+              const existingData =
+                JSON.parse(
+                  localStorage.getItem(`uploadProgress_${fileTitle}`),
+                ) || {};
+              localStorage.setItem(
+                `uploadProgress_${fileTitle}`,
+                JSON.stringify({ ...existingData, progress: percentCompleted }),
+              );
 
-    try {
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const title = titles[i];
-        const format = formats[i];
-        const resolution = resolutions[i];
-        const metadata = await uploadFile(file, title, format, resolution);
+              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+              const chunkProgress = JSON.parse(
+                localStorage.getItem(`chunkProgress_${fileTitle}`),
+              );
+              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+              localStorage.setItem(
+                `chunkProgress_${fileTitle}`,
+                JSON.stringify(chunkProgress),
+              );
+            },
+          },
+        );
 
-        if (metadata) {
-          // 업로드 완료 후 상태 업데이트
-          await updateFileStatus(metadata.filename, 'COMPLETED');
+        if (response.status !== 200) {
+          throw new Error('파일 청크 업로드 실패');
+        }
+
+        chunkIndex++;
+
+        // 청크 업로드가 완료된 경우, 상태를 업데이트
+        if (chunkIndex >= totalChunks) {
+          const existingData =
+            JSON.parse(localStorage.getItem(`chunkProgress_${fileTitle}`)) ||
+            {};
+          existingData.uploadCompleted = true;
+          localStorage.setItem(
+            `chunkProgress_${fileTitle}`,
+            JSON.stringify(existingData),
+          );
+        }
+      } catch (error) {
+        if (axios.isCancel(error)) {
+          window.alert('업로드 중지');
+          break;
+        } else {
+          throw error;
         }
       }
+    }
+  };
 
-      setUploadStatus('File uploaded successfully!');
-    } catch (error) {
-      setUploadStatus('Error uploading file.');
-      console.error('Error:', error);
+  // 인코딩 요청 함수
+  const requestEncoding = async (files, savedResources, encodings, titles) => {
+    const encodingsWithFileNames = files.reduce((acc, file, index) => {
+      acc[savedResources[index].filename] = {
+        encodings: encodings[index],
+        title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
+      };
+      return acc;
+    }, {});
 
-      // 업로드 실패 시 상태 업데이트
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const title = titles[i];
+    return axios.post(
+      'http://localhost:8080/api/encoding',
+      encodingsWithFileNames,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  };
 
-        const filename = `${title || file.name}.${file.name.split('.').pop()}`;
-        await updateFileStatus(filename, 'FAIL'); // 실패 시 상태를 FAIL로 업데이트
+  // 업로드 버튼 함수
+  const handleUpload = async () => {
+    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
+    navigate('/uploadProgress', {
+      state: {
+        files,
+        titles,
+        encodings,
+        resolutions,
+      },
+    }); // 페이지 이동
+
+    try {
+      const saveResponse = await saveMetadata(files, titles, resolutions);
+
+      if (saveResponse.status === 200) {
+        const savedResources = saveResponse.data;
+
+        // 파일 제목과 파일 객체 매핑
+        const fileTitleMap = files.reduce((acc, file, index) => {
+          const title =
+            titles[index] || file.name.split('.').slice(0, -1).join('.');
+          acc[title] = file;
+          return acc;
+        }, {});
+
+        savedResources.sort((a, b) => {
+          const aIndex = files.indexOf(fileTitleMap[a.fileTitle]);
+          const bIndex = files.indexOf(fileTitleMap[b.fileTitle]);
+          return aIndex - bIndex;
+        });
+
+        // 로컬스토리지에 각 파일의 진행 상항과 필요한 데이터를 저장
+        savedResources.forEach((resource, index) => {
+          const fileTitle =
+            titles[index] ||
+            files[index].name.split('.').slice(0, -1).join('.');
+          const filePath = files[index].path;
+          const encoding = encodings[index];
+
+          localStorage.setItem(
+            `chunkProgress_${fileTitle}`,
+            JSON.stringify({
+              chunkIndex: 0,
+              filePath: filePath,
+              savedResources: resource,
+              encodings: encoding,
+            }),
+          );
+        });
+
+        // 청크 업로드 진행
+        for (let i = 0; i < savedResources.length; i++) {
+          const file = files[i];
+          const fileTitle =
+            titles[i] || file.name.split('.').slice(0, -1).join('.');
+          await uploadChunks(file, savedResources[i], fileTitle);
+        }
+
+        // 정상적으로 업로드 완료된 파일들만 필터링
+        const uploadedResources = savedResources.filter((resource) => {
+          const progress = JSON.parse(
+            localStorage.getItem(`chunkProgress_${resource.fileTitle}`),
+          );
+          return progress && progress.uploadCompleted;
+        });
+
+        // 인코딩 요청 (업로드가 완료된 파일들만 인코딩 요청)
+        if (uploadedResources.length > 0) {
+          const uploadedFiles = uploadedResources.map((resource) => {
+            const fileTitle = resource.fileTitle;
+            return files.find(
+              (file, index) =>
+                (titles[index] ||
+                  file.name.split('.').slice(0, -1).join('.')) === fileTitle,
+            );
+          });
+
+          const uploadedEncodings = uploadedResources.map((resource) => {
+            const fileTitle = resource.fileTitle;
+            const fileIndex = files.findIndex(
+              (file, index) =>
+                (titles[index] ||
+                  file.name.split('.').slice(0, -1).join('.')) === fileTitle,
+            );
+            return encodings[fileIndex];
+          });
+
+          const uploadedTitles = uploadedResources.map(
+            (resource) => resource.fileTitle,
+          );
+          await requestEncoding(
+            uploadedFiles,
+            uploadedResources,
+            uploadedEncodings,
+            uploadedTitles,
+          );
+        } else {
+          console.log('청크 업로드 미완료');
+        }
       }
+    } catch (error) {
+      console.log(error.message);
     }
   };
 
@@ -181,9 +510,8 @@ function UploadComponent() {
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         className="p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer"
-        onClick={handleAreaClick} // 업로드 영역 클릭 시 파일 선택창 열기
+        onClick={handleAreaClick}
       >
-        {/* 파일이 없는 경우 문구를 중앙에 표시 */}
         {files.length === 0 && (
           <p className="absolute inset-0 flex items-center justify-center text-gray-500">
             파일 첨부 영역
@@ -191,58 +519,122 @@ function UploadComponent() {
         )}
 
         <div className="p-10">
-          {files.map((file, index) => (
-            <div
-              key={index}
-              className="border p-4 mt-4 mb-4 rounded-md shadow-sm flex"
-              onClick={handleChildClick}
-            >
-              {/* 왼쪽: 이미지 미리보기 */}
-              <div className="w-1/2 pr-4">
-                <img
-                  src={URL.createObjectURL(file)}
-                  alt={file.name}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
+          {files.map((file, fileIndex) => {
+            const isImage = file.type.startsWith('image/');
+            const isVideo = file.type.startsWith('video/');
+            const fileUrl = URL.createObjectURL(file); // 파일의 URL 생성
 
-              {/* 오른쪽: 제목, 포맷, 해상도 설정 */}
-              <div className="w-1/2 pr-4">
-                <label className="block mb-2 font-bold">{file.name}</label>
-                <input
-                  type="text"
-                  placeholder="제목을 입력해주세요."
-                  className="p-2 border rounded-md w-full mb-4"
-                  value={titles[index] || ''}
-                  onChange={(e) => handleTitleChange(index, e)}
-                />
-
-                <div className="mb-4">
-                  <select
-                    className="p-2 border rounded-md w-full"
-                    value={formats[index] || 'jpg'}
-                    onChange={(e) => handleFormatChange(index, e)}
-                  >
-                    <option value="jpg">JPG</option>
-                    <option value="png">PNG</option>
-                    <option value="gif">GIF</option>
-                  </select>
+            return (
+              <div
+                key={fileIndex}
+                className="relative border p-4 mt-4 mb-4 rounded-md shadow-sm flex"
+                onClick={handleChildClick}
+              >
+                <button
+                  onClick={() => handleFileDelete(fileIndex)}
+                  className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                >
+                  &times;
+                </button>
+                <div className="w-1/2 pr-4">
+                  {isImage ? (
+                    <img
+                      src={fileUrl}
+                      alt={file.name}
+                      className="w-full h-auto object-cover"
+                    />
+                  ) : isVideo ? (
+                    <video
+                      src={fileUrl}
+                      className="w-full h-auto object-cover"
+                      controls
+                    />
+                  ) : (
+                    <p>미리보기 불가</p>
+                  )}
                 </div>
 
-                <div className="mb-4">
-                  <select
-                    className="p-2 border rounded-md w-full"
-                    value={resolutions[index] || '1080p'}
-                    onChange={(e) => handleResolutionChange(index, e)}
-                  >
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
-                    <option value="4k">4K</option>
-                  </select>
+                <div className="w-1/2 pr-4">
+                  <label className="block mb-2 font-bold">{file.name}</label>
+                  <input
+                    type="text"
+                    placeholder="제목을 입력해주세요."
+                    className="p-2 border rounded-md w-full mb-4"
+                    value={titles[fileIndex] || ''}
+                    onChange={(e) => handleTitleChange(fileIndex, e)}
+                  />
+
+                  {encodings[fileIndex]?.map((encoding, encodingIndex) => (
+                    <div key={encodingIndex} className="flex space-x-4 mb-4">
+                      <div className="w-1/4">
+                        <select
+                          className="p-2 border rounded-md w-full"
+                          value={encoding.format}
+                          onChange={(e) =>
+                            handleFormatChange(fileIndex, encodingIndex, e)
+                          }
+                        >
+                          {isImage ? (
+                            <>
+                              <option value="png">PNG</option>
+                              <option value="jpg">JPG</option>
+                              <option value="bmp">BMP</option>
+                            </>
+                          ) : (
+                            <>
+                              <option value="mp4">MP4</option>
+                              <option value="mov">MOV</option>
+                              <option value="avi">AVI</option>
+                              <option value="mkv">MKV</option>
+                            </>
+                          )}
+                        </select>
+                      </div>
+
+                      <div className="w-1/4">
+                        <select
+                          className="p-2 border rounded-md w-full"
+                          value={encoding.resolution}
+                          onChange={(e) =>
+                            handleResolutionChange(fileIndex, encodingIndex, e)
+                          }
+                        >
+                          <option value="720p">720p</option>
+                          <option value="1080p">1080p</option>
+                          <option value="4k">4K</option>
+                        </select>
+                      </div>
+
+                      {encodingIndex === encodings[fileIndex].length - 1 && (
+                        <>
+                          <div className="w-1/4">
+                            <button
+                              className="w-full p-2 bg-blue-500 text-white rounded"
+                              onClick={() => addEncoding(fileIndex)}
+                            >
+                              +
+                            </button>
+                          </div>
+
+                          <div className="w-1/4">
+                            <button
+                              className="w-full p-2 bg-red-500 text-white rounded"
+                              onClick={() =>
+                                removeEncoding(fileIndex, encodingIndex)
+                              }
+                              disabled={encodings[fileIndex].length <= 1}
+                            >
+                              -
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <input
@@ -250,7 +642,7 @@ function UploadComponent() {
           multiple
           onChange={handleFileChange}
           ref={fileInputRef}
-          className="hidden" // 파일 선택 버튼 숨기기
+          className="hidden"
         />
       </div>
 
@@ -260,7 +652,6 @@ function UploadComponent() {
       >
         Upload
       </button>
-      <p>{uploadStatus}</p>
     </div>
   );
 }

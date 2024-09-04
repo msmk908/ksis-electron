@@ -1,6 +1,11 @@
 // src/App.tsx
 import React from 'react';
-import { MemoryRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import {
+  MemoryRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+} from 'react-router-dom';
 import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
 import UploadProgressComponent from './UploadProgressComponent';
@@ -8,7 +13,6 @@ import Sidebar from './Sidebar'; // 사이드바 컴포넌트 import
 import Login from './Login';
 import Mac from './Mac';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
-
 
 function App() {
   return (
@@ -20,7 +24,8 @@ function App() {
 
 const RouteHandler = () => {
   const location = useLocation();
-  const shouldHideSidebar = location.pathname === '/' || location.pathname === '/login';
+  const shouldHideSidebar =
+    location.pathname === '/' || location.pathname === '/login';
 
   return (
     <div className="flex">

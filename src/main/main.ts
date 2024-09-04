@@ -1,6 +1,7 @@
 import os from 'node:os';
 import path from 'path';
-import { app, BrowserWindow, shell, ipcMain } from 'electron';
+import fs from 'fs'; // fs 모듈 추가
+import { app, BrowserWindow, shell, ipcMain, Tray, Menu } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
@@ -17,6 +18,9 @@ class AppUpdater {
 }
 
 let mainWindow: BrowserWindow | null = null;
+// 트레이
+let tray: Tray | null = null;
+let isQuiting = false; // 앱 종료 여부를 추적하는 플래그
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -49,6 +53,44 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
+// 트레이 생성
+const createTray = () => {
+  if (!tray) {
+    const iconPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'assets/icon.png')
+      : path.join(__dirname, '../../assets/icon.png');
+
+    tray = new Tray(iconPath);
+    tray.setToolTip('ksis-electron');
+    tray.on('click', () => {
+      if (mainWindow) {
+        mainWindow.isVisible() ? mainWindow.hide() : mainWindow.show();
+      }
+    });
+
+    tray.on('right-click', () => {
+      const contextMenu = Menu.buildFromTemplate([
+        {
+          label: 'Show',
+          click: () => {
+            if (mainWindow) {
+              mainWindow.show();
+            }
+          },
+        },
+        {
+          label: 'Quit',
+          click: () => {
+            isQuiting = true;
+            app.quit();
+          },
+        },
+      ]);
+      tray?.popUpContextMenu(contextMenu);
+    });
+  }
+};
+
 const createWindow = async () => {
   if (isDebug) {
     await installExtensions();
@@ -72,7 +114,7 @@ const createWindow = async () => {
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
-    autoHideMenuBar: true
+    autoHideMenuBar: true,
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
@@ -85,6 +127,13 @@ const createWindow = async () => {
       mainWindow.minimize();
     } else {
       mainWindow.show();
+    }
+  });
+
+  mainWindow.on('close', (event) => {
+    if (!isQuiting) {
+      event.preventDefault();
+      mainWindow?.hide();
     }
   });
 
@@ -106,6 +155,18 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
+// 파일을 가져오는 ipc통신
+ipcMain.handle('get-file', async (event, filePath) => {
+  try {
+    // 파일 데이터를 읽어옴
+    const fileBuffer = fs.readFileSync(filePath);
+    return fileBuffer; // 파일 데이터를 반환
+  } catch (error) {
+    console.error('파일을 읽는 중 오류 발생:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('get-mac-address', () => {
   const networkInterfaces = os.networkInterfaces();
   const macAddresses: string[] = [];
@@ -113,7 +174,7 @@ ipcMain.handle('get-mac-address', () => {
   for (const key in networkInterfaces) {
     if (networkInterfaces.hasOwnProperty(key)) {
       const addresses = networkInterfaces[key];
-      
+
       // addresses가 undefined가 아닐 때만 처리
       if (addresses) {
         addresses.forEach((address) => {
@@ -149,36 +210,19 @@ app.on('second-instance', (event, commandLine, workingDirectory) => {
 });
 
 app.on('open-url', (event, url) => {
-  if (url.startsWith('ksis://login')) {
-    if (mainWindow) {
-      mainWindow.loadURL(resolveHtmlPath('index.html')); // 로그인 페이지를 /로 설정합니다.
-      mainWindow.show();
-      mainWindow.focus();
-    } else {
-      app.once('ready', () => {
-        createWindow();
-        app.whenReady().then(() => {
-          if (mainWindow) {
-            mainWindow.loadURL(resolveHtmlPath('index.html')); // 로그인 페이지를 /로 설정합니다.
-            mainWindow.show();
-            mainWindow.focus();
-          }
-        });
-      });
-    }
+  if (mainWindow) {
+    mainWindow.webContents.send('open-url', url);
   } else {
-    if (mainWindow) {
-      mainWindow.webContents.send('open-url', url);
-    } else {
-      app.once('ready', () => {
-        createWindow();
-        app.whenReady().then(() => {
-          if (mainWindow) {
-            mainWindow.webContents.send('open-url', url);
-          }
-        });
+    app.once('ready', () => {
+      createWindow();
+      createTray(); // 트레이 생성
+      app.whenReady().then(() => {
+        if (mainWindow === null) {
+          createWindow();
+          createTray(); // 트레이 생성 추가
+        }
       });
-    }
+    });
   }
 });
 
@@ -186,12 +230,9 @@ app
   .whenReady()
   .then(() => {
     createWindow();
+    createTray(); // 트레이 생성
     app.on('activate', () => {
-      // On macOS it's common to re-create a window in the app when the
-      // dock icon is clicked and there are no other windows open.
       if (mainWindow === null) createWindow();
     });
   })
   .catch(console.log);
-
-  

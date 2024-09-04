@@ -1,4 +1,4 @@
-import React,  { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 
 // 로고 이미지 경로를 상대 경로로 가져오기
@@ -6,11 +6,11 @@ import ksisLogo from '../../assets/logo/ksis-logo.png';
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
-  
+
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
     const accountId = localStorage.getItem('accountId');
-    console.log("User ID:", accountId);
+    console.log('User ID:', accountId);
     if (accountId) {
       setAccountId(accountId);
     }
@@ -23,7 +23,7 @@ const Sidebar: React.FC = () => {
       <ul className="space-y-2">
         <li>
           <NavLink
-            to="/upload"
+            to="/"
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
