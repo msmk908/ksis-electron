@@ -230,6 +230,9 @@ function UploadComponent() {
     const formData = new FormData();
     const dtos = [];
 
+    // 로컬스토리지에서 accountId 가져오기
+    const accountId = localStorage.getItem('accountId');
+
     await Promise.all(
       files.map(async (file, index) => {
         // 원본 파일의 확장자 추출 (확장자에서 . 제거)
@@ -258,6 +261,7 @@ function UploadComponent() {
 
         // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
         const dto = {
+          account: accountId,
           fileTitle: fileTitle,
           playTime: playTime,
           format: format,
