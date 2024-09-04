@@ -22,14 +22,24 @@ const Login = () => {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(credentials),
-            }).then((res) => res.json());
+            }).then((res) => res.json())
+            .then((data) => {   
+                console.log('Received JSON data:', data);
+                if (data.accessToken) {
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    localStorage.setItem('accountId', accountId);
+                    alert('Login successful');
+                    navigate('/upload');
+                    // 쿼리 파라미터로 포함한 URL 생성
+                    // const url = `http://localhost:3000/get-token?accountId=${encodeURIComponent(accountId)}`;
+                    const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
 
-            if (response.success) {
-                alert('Login successful');
-                navigate('/upload');
-            } else {
-                setError('아이디 또는 비밀번호가 일치하지 않습니다');
-            }
+                    window.electron.ipcRenderer.invoke('open-url', url);
+                } else {
+                    setError('아이디 또는 비밀번호가 일치하지 않습니다');
+                }
+            })
         } catch (error) {
             alert('An error occurred: ' + error.message);
         }

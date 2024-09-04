@@ -189,6 +189,14 @@ ipcMain.handle('get-mac-address', () => {
   return macAddresses[0] || null; // 첫 번째 MAC 주소를 반환하거나 없으면 null
 });
 
+ipcMain.handle('open-url', (event, url) => {
+  shell.openExternal(url);
+});
+
+/**
+ * Add event listeners...
+ */
+
 app.on('second-instance', (event, commandLine, workingDirectory) => {
   if (mainWindow) {
     if (mainWindow.isMinimized()) mainWindow.restore();
@@ -215,14 +223,6 @@ app.on('open-url', (event, url) => {
         }
       });
     });
-  }
-});
-
-app.on('window-all-closed', () => {
-  // Respect the OSX convention of having the application in memory even
-  // after all windows have been closed
-  if (process.platform !== 'darwin') {
-    app.quit();
   }
 });
 
