@@ -10,8 +10,6 @@ function UploadComponent() {
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
-  const cancelTokens = new Map(); // 취소 토큰 저장
-  const [pausedFiles, setPausedFiles] = useState(new Set()); // 일시정지 파일 상태
   const navigate = useNavigate(); // 네비게이트 훅 사용
 
   // 첨부파일 추가 메서드
@@ -292,16 +290,10 @@ function UploadComponent() {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let chunkIndex = savedResource.chunkIndex || 0;
 
-    // 현재 업로드 요청을 취소할 수 있는 토큰 생성
-    if (!cancelTokens.has(fileTitle)) {
-      cancelTokens.set(fileTitle, axios.CancelToken.source());
-    }
-
-    const cancelToken = cancelTokens.get(fileTitle).token;
-
     while (chunkIndex < totalChunks) {
-      if (pausedFiles.has(fileTitle)) {
-        // 업로드가 일시정지 상태일 때, 청크 업로드를 중단
+      const isPaused = localStorage.getItem(`${fileTitle}_paused`) === 'true';
+      if (isPaused) {
+        // 로컬스토리지에 paused 가 true 일 때 정지
         return;
       }
 
@@ -323,7 +315,6 @@ function UploadComponent() {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
-            cancelToken: cancelToken,
             onUploadProgress: (progressEvent) => {
               const percentCompleted = Math.min(
                 100,
@@ -415,8 +406,6 @@ function UploadComponent() {
         titles,
         encodings,
         resolutions,
-        cancelTokens,
-        pausedFiles,
       },
     }); // 페이지 이동
 
@@ -467,17 +456,44 @@ function UploadComponent() {
           await uploadChunks(file, savedResources[i], fileTitle);
         }
 
-        // 모든 파일의 청크 업로드가 완료된 후 인코딩 요청
-        const allFilesUploaded = savedResources.every((resource) => {
+        // 정상적으로 업로드 완료된 파일들만 필터링
+        const uploadedResources = savedResources.filter((resource) => {
           const progress = JSON.parse(
             localStorage.getItem(`chunkProgress_${resource.fileTitle}`),
           );
           return progress && progress.uploadCompleted;
         });
 
-        if (allFilesUploaded) {
-          // 인코딩 요청
-          await requestEncoding(files, savedResources, encodings, titles);
+        // 인코딩 요청 (업로드가 완료된 파일들만 인코딩 요청)
+        if (uploadedResources.length > 0) {
+          const uploadedFiles = uploadedResources.map((resource) => {
+            const fileTitle = resource.fileTitle;
+            return files.find(
+              (file, index) =>
+                (titles[index] ||
+                  file.name.split('.').slice(0, -1).join('.')) === fileTitle,
+            );
+          });
+
+          const uploadedEncodings = uploadedResources.map((resource) => {
+            const fileTitle = resource.fileTitle;
+            const fileIndex = files.findIndex(
+              (file, index) =>
+                (titles[index] ||
+                  file.name.split('.').slice(0, -1).join('.')) === fileTitle,
+            );
+            return encodings[fileIndex];
+          });
+
+          const uploadedTitles = uploadedResources.map(
+            (resource) => resource.fileTitle,
+          );
+          await requestEncoding(
+            uploadedFiles,
+            uploadedResources,
+            uploadedEncodings,
+            uploadedTitles,
+          );
         } else {
           console.log('청크 업로드 미완료');
         }

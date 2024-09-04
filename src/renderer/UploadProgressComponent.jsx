@@ -12,11 +12,9 @@ function UploadProgressComponent() {
     titles = {},
     encodings = {},
     resolutions = {},
-    cancelTokens = new Map(),
-    pausedFiles = new Set(),
   } = location.state || {};
   const [progress, setProgress] = useState({});
-  const [pausedFilesState, setPausedFilesState] = useState(pausedFiles);
+  const [pausedFilesState, setPausedFilesState] = useState(new Set());
 
   // 컴포넌트가 마운트될 때 로컬스토리지에서 업로드 퍼센트 읽어오는 코드
   useEffect(() => {
@@ -62,6 +60,11 @@ function UploadProgressComponent() {
     };
 
     readPausedFiles();
+    window.addEventListener('storage', readPausedFiles); // 로컬스토리지의 변화 감지
+
+    return () => {
+      window.removeEventListener('storage', readPausedFiles); // 컴포넌트 언마운트 시 이벤트 제거
+    };
   }, []);
 
   // 청크 업로드 함수
@@ -70,16 +73,10 @@ function UploadProgressComponent() {
     const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
     let chunkIndex = chunkindex || 0;
 
-    // 현재 업로드 요청을 취소할 수 있는 토큰 생성
-    if (!cancelTokens.has(fileTitle)) {
-      cancelTokens.set(fileTitle, axios.CancelToken.source());
-    }
-
-    const cancelToken = cancelTokens.get(fileTitle).token;
-
     while (chunkIndex < totalChunks) {
-      if (pausedFiles.has(fileTitle)) {
-        // 업로드가 일시정지 상태일 때, 청크 업로드를 중단
+      const isPaused = localStorage.getItem(`${fileTitle}_paused`) === 'true';
+      if (isPaused) {
+        // 로컬스토리지에 paused 가 true 일 때 정지
         return;
       }
 
@@ -101,7 +98,6 @@ function UploadProgressComponent() {
             headers: {
               'Content-Type': 'multipart/form-data',
             },
-            cancelToken: cancelToken,
             onUploadProgress: (progressEvent) => {
               const percentCompleted = Math.min(
                 100,
@@ -140,6 +136,18 @@ function UploadProgressComponent() {
         }
 
         chunkIndex++;
+
+        // 청크 업로드가 완료된 경우, 상태를 업데이트
+        if (chunkIndex >= totalChunks) {
+          const existingData =
+            JSON.parse(localStorage.getItem(`chunkProgress_${fileTitle}`)) ||
+            {};
+          existingData.uploadCompleted = true;
+          localStorage.setItem(
+            `chunkProgress_${fileTitle}`,
+            JSON.stringify(existingData),
+          );
+        }
       } catch (error) {
         if (axios.isCancel(error)) {
           window.alert('업로드 중지');
@@ -151,26 +159,37 @@ function UploadProgressComponent() {
     }
   };
 
+  // 인코딩 요청 함수
+  const requestEncoding = async (file, savedResource, encoding, title) => {
+    console.log('인코딩 요청');
+    const encodingsWithFileNames = {
+      [savedResource.filename]: {
+        encodings: encoding, // 단일 파일의 인코딩 정보
+        title: title || file.name.split('.').slice(0, -1).join('.'),
+      },
+    };
+
+    return axios.post(
+      'http://localhost:8080/api/encoding',
+      encodingsWithFileNames,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
+  };
+
   // 일시정지 기능
   const pauseUpload = (fileName) => {
     // 일시정지 상태를 로컬스토리지에 저장
     localStorage.setItem(`${fileName}_paused`, 'true');
-
-    // 요청 취소
-    if (cancelTokens.has(fileName)) {
-      cancelTokens.get(fileName).cancel();
-    }
   };
 
   // 재개 기능
   const resumeUpload = async (fileName) => {
     // 일시정지 상태를 로컬스토리지에서 제거
     localStorage.removeItem(`${fileName}_paused`);
-
-    // 취소 토큰을 새로 생성
-    if (cancelTokens.has(fileName)) {
-      cancelTokens.set(fileName, axios.CancelToken.source());
-    }
 
     const chunkProgress = JSON.parse(
       localStorage.getItem(`chunkProgress_${fileName}`),
@@ -199,6 +218,31 @@ function UploadProgressComponent() {
         // 업로드 재개
         if (file && savedResource) {
           await uploadChunks(file, savedResource, fileName, chunkindex);
+        }
+
+        // 모든 파일의 청크 업로드가 완료된 후 인코딩 요청
+        const isFileUploaded = (fileTitle) => {
+          const progress = JSON.parse(
+            localStorage.getItem(`chunkProgress_${fileTitle}`),
+          );
+          return progress && progress.uploadCompleted;
+        };
+
+        if (isFileUploaded(savedResource.fileTitle)) {
+          console.log('savedResource.fileTitle' + savedResource.fileTitle);
+          const encodings = JSON.parse(
+            localStorage.getItem(`chunkProgress_${savedResource.fileTitle}`),
+          ).encodings;
+
+          // 인코딩 요청
+          await requestEncoding(
+            file,
+            savedResource,
+            encodings,
+            savedResource.fileTitle,
+          );
+        } else {
+          console.log('청크 업로드 미완료');
         }
       } catch (error) {
         console.error('파일을 가져오는 중 오류 발생:', error);
