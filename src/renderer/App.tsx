@@ -12,11 +12,13 @@ import UploadProgressComponent from './UploadProgressComponent';
 import Sidebar from './Sidebar'; // 사이드바 컴포넌트 import
 import Login from './Login';
 import Mac from './Mac';
+import WebSocketComponent from './WebSocketComponent';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 
 function App() {
   return (
     <Router>
+      <WebSocketComponent />
       <RouteHandler />
     </Router>
   );

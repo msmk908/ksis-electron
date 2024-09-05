@@ -3,6 +3,8 @@ import { useLocation } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
 import axios from 'axios';
+import SockJS from 'sockjs-client';
+import Stomp from 'stompjs';
 
 function UploadProgressComponent() {
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정

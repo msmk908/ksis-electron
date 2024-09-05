@@ -97,6 +97,7 @@
   },
   "dependencies": {
     "@electron/notarize": "^2.3.2",
+    "@stomp/stompjs": "^7.0.0",
     "axios": "^1.7.3",
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
@@ -105,7 +106,8 @@
     "node-notifier": "^10.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.16.0",
+    "sockjs-client": "^1.6.1"
   },
   "devDependencies": {
     "@electron/rebuild": "^3.3.0",
