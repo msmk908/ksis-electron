@@ -3,6 +3,7 @@ import { NavLink } from 'react-router-dom';
 
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
+import apiClient from '../apiClient';
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
@@ -23,7 +24,7 @@ const Sidebar: React.FC = () => {
       <ul className="space-y-2">
         <li>
           <NavLink
-            to="/"
+            to="/upload"
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
@@ -48,11 +49,23 @@ const Sidebar: React.FC = () => {
         <li>
           <NavLink
             to="/"
-            onClick={() => {
-              //로그아웃 시 로컬스토리지 제거
-              localStorage.removeItem('accessToken');
-              localStorage.removeItem('refreshToken');
-              localStorage.removeItem('accountId');
+            onClick={async () => {
+              const accountId = localStorage.getItem('accountId');
+              try {
+                // 서버로 로그아웃 요청 전송
+                await apiClient.delete(`/logout/${accountId}`);
+
+                await apiClient.post('/access-log',{
+                  accountId,
+                  category: 'LOGOUT',
+                })
+                // 로그아웃 성공 시 로컬스토리지 토큰 제거
+                localStorage.removeItem('accessToken');
+                localStorage.removeItem('refreshToken');
+                localStorage.removeItem('accountId');
+              } catch (error) {
+                console.error("로그아웃 실패: ", error);
+              }
             }}
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
