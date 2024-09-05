@@ -368,6 +368,10 @@ function UploadComponent() {
             `chunkProgress_${fileTitle}`,
             JSON.stringify(existingData),
           );
+
+          // 파일 업로드 되었을 때 토스트 알림
+          // 메인 프로세스에 알림 전송
+          window.electron.ipcRenderer.sendMessage('upload-complete', fileTitle);
         }
       } catch (error) {
         if (axios.isCancel(error)) {

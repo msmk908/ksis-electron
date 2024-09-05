@@ -102,6 +102,7 @@
     "electron-log": "^4.4.8",
     "electron-updater": "^6.1.4",
     "makensis": "^2.0.8",
+    "node-notifier": "^10.0.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.16.0"
@@ -115,6 +116,7 @@
     "@testing-library/react": "^14.0.0",
     "@types/jest": "^29.5.5",
     "@types/node": "20.6.2",
+    "@types/node-notifier": "^8.0.5",
     "@types/react": "^18.2.21",
     "@types/react-dom": "^18.2.7",
     "@types/react-test-renderer": "^18.0.1",
