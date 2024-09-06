@@ -1,7 +1,11 @@
 // Disable no-unused-vars, broken for spread args
 /* eslint no-unused-vars: off */
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-export type Channels = 'ipc-example' | 'get-file' | 'upload-complete';
+export type Channels =
+  | 'ipc-example'
+  | 'get-file'
+  | 'upload-complete'
+  | 'encoding-complete';
 
 const electronHandler = {
   ipcRenderer: {
@@ -39,6 +43,11 @@ const electronHandler = {
   // 파일을 가져오는 함수 추가
   getFile(filePath: string) {
     return ipcRenderer.invoke('get-file', filePath);
+  },
+
+  // 업로드 토스트 알림
+  uploadComplete(fileTitle: string) {
+    return ipcRenderer.invoke('upload-complete', fileTitle);
   },
 };
 

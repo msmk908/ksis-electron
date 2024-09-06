@@ -143,6 +143,13 @@ const createWindow = async () => {
     }
   });
 
+  // 패키징 상태에서도 개발자 도구를 열도록 설정
+  mainWindow.webContents.on('did-frame-finish-load', () => {
+    if (!isDebug) {
+      mainWindow?.webContents.openDevTools({ mode: 'detach' }); // 개발자 도구 분리 모드로 열기
+    }
+  });
+
   mainWindow.on('close', (event) => {
     if (!isQuiting) {
       event.preventDefault();
@@ -207,7 +214,7 @@ ipcMain.handle('open-url', (event, url) => {
 });
 
 // 원본 업로드 토스트 알림 통신
-ipcMain.on('upload-complete', (event, fileTitle) => {
+ipcMain.handle('upload-complete', (event, fileTitle) => {
   notifier.notify({
     title: '업로드 완료',
     message: `${fileTitle} 파일이 성공적으로 업로드되었습니다`,
@@ -218,7 +225,7 @@ ipcMain.on('upload-complete', (event, fileTitle) => {
 });
 
 // 인코딩 업로드 토스트 알림 통신
-ipcMain.on('encoding-complete', (event, fileTitle) => {
+ipcMain.handle('encoding-complete', (event, fileTitle) => {
   notifier.notify({
     title: '인코딩 완료',
     message: `${fileTitle} 인코딩이 성공적으로 완료되었습니다`,
