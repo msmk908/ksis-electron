@@ -49,6 +49,11 @@ const electronHandler = {
   uploadComplete(fileTitle: string) {
     return ipcRenderer.invoke('upload-complete', fileTitle);
   },
+
+  // 인코딩 토스트 알림
+  encodingComplete(fileTitle: string) {
+    return ipcRenderer.invoke('encoding-complete', fileTitle);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
