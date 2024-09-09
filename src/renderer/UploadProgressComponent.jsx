@@ -161,7 +161,25 @@ function UploadProgressComponent() {
             resourceType = 'VIDEO';
           } else if (file.type.startsWith('image/')) {
             resourceType = 'IMAGE';
+          } else {
+            // MIME 타입이 비정상적일 경우 확장자를 기준으로 처리
+            const extension = savedResource.filename
+              .split('.')
+              .pop()
+              .toLowerCase();
+
+            if (['mp4', 'mkv', 'mov', 'avi'].includes(extension)) {
+              resourceType = 'VIDEO';
+            } else if (
+              ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)
+            ) {
+              resourceType = 'IMAGE';
+            } else {
+              console.warn('알 수 없는 파일 형식입니다:', extension);
+            }
           }
+
+          console.log('Resource Type:', resourceType);
 
           // 알림 저장 함수 호출
           uploadNotification(accountId, fileTitle, resourceType);
@@ -178,12 +196,19 @@ function UploadProgressComponent() {
   };
 
   // 인코딩 요청 함수
-  const requestEncoding = async (file, savedResource, encoding, title) => {
+  const requestEncoding = async (
+    file,
+    savedResource,
+    encoding,
+    title,
+    accountId,
+  ) => {
     console.log('인코딩 요청');
     const encodingsWithFileNames = {
       [savedResource.filename]: {
         encodings: encoding, // 단일 파일의 인코딩 정보
         title: title || file.name.split('.').slice(0, -1).join('.'),
+        accountId: accountId,
       },
     };
 
@@ -221,9 +246,6 @@ function UploadProgressComponent() {
       if (!response.ok) {
         throw new Error(`Server error: ${response.status}`);
       }
-
-      const data = await response.json();
-      console.log('Notification send successfully:', data);
     } catch (error) {
       console.error('Error sending notification:', error);
     }
@@ -289,6 +311,7 @@ function UploadProgressComponent() {
             savedResource,
             encodings,
             savedResource.fileTitle,
+            accountId,
           );
         } else {
           console.log('청크 업로드 미완료');
