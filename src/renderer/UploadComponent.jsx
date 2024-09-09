@@ -281,11 +281,15 @@ function UploadComponent() {
       new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
     );
 
-    return axios.post('http://localhost:8080/api/filedatasave', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
+    return axios.post(
+      'http://localhost:8080/api/filedatasave' + `/${accountId}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       },
-    });
+    );
   };
 
   // 청크 업로드 함수
@@ -413,7 +417,7 @@ function UploadComponent() {
     }, {});
 
     return axios.post(
-      'http://localhost:8080/api/encoding',
+      'http://localhost:8080/api/encoding' + `/${accountId}`,
       encodingsWithFileNames,
       {
         headers: {
