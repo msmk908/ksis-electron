@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import apiClient from '../apiClient';
 
 const Login = () => {
     const [accountId, setAccountId] = useState('');
@@ -23,7 +24,7 @@ const Login = () => {
                 },
                 body: JSON.stringify(credentials),
             }).then((res) => res.json())
-            .then((data) => {   
+            .then(async (data) => {   
                 console.log('Received JSON data:', data);
                 if (data.accessToken) {
                     localStorage.setItem('accessToken', data.accessToken);
@@ -31,11 +32,21 @@ const Login = () => {
                     localStorage.setItem('accountId', accountId);
                     alert('Login successful');
                     navigate('/upload');
+                    
                     // 쿼리 파라미터로 포함한 URL 생성
-                    // const url = `http://localhost:3000/get-token?accountId=${encodeURIComponent(accountId)}`;
                     const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
 
                     window.electron.ipcRenderer.invoke('open-url', url);
+
+                    try {
+                        await apiClient.post('/access-log', {
+                            accountId: accountId,
+                            category: 'LOGIN',
+                        });
+                        console.log('Login access log successfully sent.');
+                    } catch (logError) {
+                        console.error('Failed to send access log:', logError);
+                    }
                 } else {
                     setError('아이디 또는 비밀번호가 일치하지 않습니다');
                 }
@@ -55,7 +66,6 @@ const Login = () => {
                         type="text"
                         id="accountId"
                         className="py-2 px-4 border border-orange-400 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
-                        // placeholder="아이디를 입력하세요"
                         value={accountId}
                         onChange={(e) => setAccountId(e.target.value)}
                         required
@@ -67,7 +77,6 @@ const Login = () => {
                         type="password"
                         id="password"
                         className="py-2 px-4 border border-orange-500 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
-                        // placeholder="비밀번호를 입력하세요"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
