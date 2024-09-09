@@ -16,6 +16,9 @@ function UploadProgressComponent() {
   const [progress, setProgress] = useState({});
   const [pausedFilesState, setPausedFilesState] = useState(new Set());
 
+  // 로컬스토리지에서 accountId 가져오기
+  const accountId = localStorage.getItem('accountId');
+
   // 컴포넌트가 마운트될 때 로컬스토리지에서 업로드 퍼센트 읽어오는 코드
   useEffect(() => {
     const updateProgress = () => {
@@ -151,6 +154,17 @@ function UploadProgressComponent() {
           // 파일 업로드 되었을 때 토스트 알림
           // 메인 프로세스에 알림 전송
           window.electron.uploadComplete('upload-complete', fileTitle);
+
+          // 파일 타입에 따른 resourceType 설정
+          let resourceType = '';
+          if (file.type.startsWith('video/')) {
+            resourceType = 'VIDEO';
+          } else if (file.type.startsWith('image/')) {
+            resourceType = 'IMAGE';
+          }
+
+          // 알림 저장 함수 호출
+          uploadNotification(accountId, fileTitle, resourceType);
         }
       } catch (error) {
         if (axios.isCancel(error)) {
@@ -182,6 +196,37 @@ function UploadProgressComponent() {
         },
       },
     );
+  };
+
+  // 알림 데이터베이스 저장 요청 함수
+  const uploadNotification = async (account, message, resourceType) => {
+    try {
+      const requestData = {
+        account,
+        message,
+        resourceType,
+      };
+
+      const response = await fetch(
+        'http://localhost:8080/api/upload/notification',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestData),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Notification send successfully:', data);
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
   };
 
   // 일시정지 기능

@@ -215,6 +215,7 @@ ipcMain.handle('open-url', (event, url) => {
 
 // 원본 업로드 토스트 알림 통신
 ipcMain.handle('upload-complete', (event, fileTitle) => {
+  console.log('fileTitle: ' + fileTitle);
   notifier.notify({
     title: '업로드 완료',
     message: `${fileTitle} 파일이 성공적으로 업로드되었습니다`,

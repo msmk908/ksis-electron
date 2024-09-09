@@ -12,6 +12,9 @@ function UploadComponent() {
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
 
+  // 로컬스토리지에서 accountId 가져오기
+  const accountId = localStorage.getItem('accountId');
+
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
@@ -230,9 +233,6 @@ function UploadComponent() {
     const formData = new FormData();
     const dtos = [];
 
-    // 로컬스토리지에서 accountId 가져오기
-    const accountId = localStorage.getItem('accountId');
-
     await Promise.all(
       files.map(async (file, index) => {
         // 원본 파일의 확장자 추출 (확장자에서 . 제거)
@@ -371,7 +371,18 @@ function UploadComponent() {
 
           // 파일 업로드 되었을 때 토스트 알림
           // 메인 프로세스에 알림 전송
-          window.electron.uploadComplete('upload-complete', fileTitle);
+          window.electron.uploadComplete(fileTitle);
+
+          // 파일 타입에 따른 resourceType 설정
+          let resourceType = '';
+          if (file.type.startsWith('video/')) {
+            resourceType = 'VIDEO';
+          } else if (file.type.startsWith('image/')) {
+            resourceType = 'IMAGE';
+          }
+
+          // 알림 저장 함수 호출
+          uploadNotification(accountId, fileTitle, resourceType);
         }
       } catch (error) {
         if (axios.isCancel(error)) {
@@ -385,11 +396,18 @@ function UploadComponent() {
   };
 
   // 인코딩 요청 함수
-  const requestEncoding = async (files, savedResources, encodings, titles) => {
+  const requestEncoding = async (
+    files,
+    savedResources,
+    encodings,
+    titles,
+    accountId,
+  ) => {
     const encodingsWithFileNames = files.reduce((acc, file, index) => {
       acc[savedResources[index].filename] = {
         encodings: encodings[index],
         title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
+        accountId: accountId,
       };
       return acc;
     }, {});
@@ -403,6 +421,27 @@ function UploadComponent() {
         },
       },
     );
+  };
+
+  // 알림 데이터베이스 저장 요청 함수
+  const uploadNotification = async (account, message, resourceType) => {
+    try {
+      const requestData = {
+        account,
+        message,
+        resourceType,
+      };
+
+      await fetch('http://localhost:8080/api/upload/notification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
   };
 
   // 업로드 버튼 함수
@@ -501,6 +540,7 @@ function UploadComponent() {
             uploadedResources,
             uploadedEncodings,
             uploadedTitles,
+            accountId,
           );
         } else {
           console.log('청크 업로드 미완료');
