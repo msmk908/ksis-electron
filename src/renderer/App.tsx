@@ -68,7 +68,6 @@ const RouteHandler = () => {
          window.location.href = '/login';
          console.log('로그아웃');
        } else {
-         navigate('/upload');
          console.log('로그인 유지');
        }
      })

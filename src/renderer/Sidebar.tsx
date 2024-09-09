@@ -25,7 +25,7 @@ const Sidebar: React.FC = () => {
       localStorage.removeItem('authority');
       localStorage.removeItem('accountId');
       // 로그인 페이지로 리디렉션
-      window.location.href = '/downloadApp';
+      window.location.href = '/login';
       console.log('로그아웃 이벤트 수신:', event.data);
       // SSE 연결 종료
       eventSource.close();  // 로그아웃 후 SSE 연결 종료
