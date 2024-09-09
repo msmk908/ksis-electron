@@ -10,11 +10,27 @@ const Sidebar: React.FC = () => {
 
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
+    let eventSource = new EventSource('http://localhost:8080/events');
     const accountId = localStorage.getItem('accountId');
+    
     console.log('User ID:', accountId);
     if (accountId) {
       setAccountId(accountId);
     }
+    
+    eventSource.addEventListener('logout', (event) => {
+      alert("로그아웃 되었습니다.");
+      // 로컬 스토리지에서 액세스 토큰 제거
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('authority');
+      localStorage.removeItem('accountId');
+      // 로그인 페이지로 리디렉션
+      window.location.href = '/downloadApp';
+      console.log('로그아웃 이벤트 수신:', event.data);
+      // SSE 연결 종료
+      eventSource.close();  // 로그아웃 후 SSE 연결 종료
+    });
+
   }, []); // 빈 배열을 의존성으로 하여 컴포넌트가 처음 마운트될 때만 실행됨
 
   return (
@@ -61,7 +77,7 @@ const Sidebar: React.FC = () => {
                 })
                 // 로그아웃 성공 시 로컬스토리지 토큰 제거
                 localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
+                // localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accountId');
               } catch (error) {
                 console.error("로그아웃 실패: ", error);

@@ -28,7 +28,7 @@ const Login = () => {
                 console.log('Received JSON data:', data);
                 if (data.accessToken) {
                     localStorage.setItem('accessToken', data.accessToken);
-                    localStorage.setItem('refreshToken', data.refreshToken);
+                    // localStorage.setItem('refreshToken', data.refreshToken);
                     localStorage.setItem('accountId', accountId);
                     alert('Login successful');
                     navigate('/upload');
