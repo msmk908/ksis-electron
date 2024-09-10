@@ -25,7 +25,7 @@ const Login = () => {
         alert('Login successful');
         navigate('/upload');
 
-        const url = `http://172.20.20.254:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
+        const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
 
         window.electron.ipcRenderer.invoke('open-url', url);
 
