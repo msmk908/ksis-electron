@@ -3,6 +3,13 @@ import { useLocation } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
 import axios from 'axios';
+import fetcher from '../fetcher';
+import {
+  FILEDATA_SAVE,
+  UPLOAD_CHUNK,
+  ENCODING,
+  UPLOAD_NOTIFICATION,
+} from '../constants/api_constant';
 
 function UploadProgressComponent() {
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
@@ -94,45 +101,39 @@ function UploadProgressComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        const response = await axios.post(
-          'http://localhost:8080/api/upload/chunk',
-          chunkFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.min(
-                100,
-                Math.round(
-                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
-                    file.size) *
-                    100,
-                ),
-              );
-
-              // 로컬스토리지에 업로드 진행퍼센트 업데이트
-              const existingData =
-                JSON.parse(
-                  localStorage.getItem(`uploadProgress_${fileTitle}`),
-                ) || {};
-              localStorage.setItem(
-                `uploadProgress_${fileTitle}`,
-                JSON.stringify({ ...existingData, progress: percentCompleted }),
-              );
-
-              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
-              const chunkProgress = JSON.parse(
-                localStorage.getItem(`chunkProgress_${fileTitle}`),
-              );
-              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
-              localStorage.setItem(
-                `chunkProgress_${fileTitle}`,
-                JSON.stringify(chunkProgress),
-              );
-            },
+        const response = await fetcher.post(UPLOAD_CHUNK, chunkFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
           },
-        );
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.min(
+              100,
+              Math.round(
+                ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) / file.size) *
+                  100,
+              ),
+            );
+
+            // 로컬스토리지에 업로드 진행퍼센트 업데이트
+            const existingData =
+              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
+              {};
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ ...existingData, progress: percentCompleted }),
+            );
+
+            // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+            const chunkProgress = JSON.parse(
+              localStorage.getItem(`chunkProgress_${fileTitle}`),
+            );
+            chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+            localStorage.setItem(
+              `chunkProgress_${fileTitle}`,
+              JSON.stringify(chunkProgress),
+            );
+          },
+        });
 
         if (response.status !== 200) {
           throw new Error('파일 청크 업로드 실패');
@@ -161,7 +162,25 @@ function UploadProgressComponent() {
             resourceType = 'VIDEO';
           } else if (file.type.startsWith('image/')) {
             resourceType = 'IMAGE';
+          } else {
+            // MIME 타입이 비정상적일 경우 확장자를 기준으로 처리
+            const extension = savedResource.filename
+              .split('.')
+              .pop()
+              .toLowerCase();
+
+            if (['mp4', 'mkv', 'mov', 'avi'].includes(extension)) {
+              resourceType = 'VIDEO';
+            } else if (
+              ['jpg', 'jpeg', 'png', 'gif', 'bmp'].includes(extension)
+            ) {
+              resourceType = 'IMAGE';
+            } else {
+              console.warn('알 수 없는 파일 형식입니다:', extension);
+            }
           }
+
+          console.log('Resource Type:', resourceType);
 
           // 알림 저장 함수 호출
           uploadNotification(accountId, fileTitle, resourceType);
@@ -178,24 +197,27 @@ function UploadProgressComponent() {
   };
 
   // 인코딩 요청 함수
-  const requestEncoding = async (file, savedResource, encoding, title) => {
+  const requestEncoding = async (
+    file,
+    savedResource,
+    encoding,
+    title,
+    accountId,
+  ) => {
     console.log('인코딩 요청');
     const encodingsWithFileNames = {
       [savedResource.filename]: {
         encodings: encoding, // 단일 파일의 인코딩 정보
         title: title || file.name.split('.').slice(0, -1).join('.'),
+        accountId: accountId,
       },
     };
 
-    return axios.post(
-      'http://localhost:8080/api/encoding',
-      encodingsWithFileNames,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return fetcher.post(ENCODING, encodingsWithFileNames, {
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   };
 
   // 알림 데이터베이스 저장 요청 함수
@@ -207,23 +229,15 @@ function UploadProgressComponent() {
         resourceType,
       };
 
-      const response = await fetch(
-        'http://localhost:8080/api/upload/notification',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestData),
+      const response = await fetcher.post(UPLOAD_NOTIFICATION, requestData, {
+        headers: {
+          'Content-Type': 'application/json',
         },
-      );
+      });
 
       if (!response.ok) {
         throw new Error(`Server error: ${response.status}`);
       }
-
-      const data = await response.json();
-      console.log('Notification send successfully:', data);
     } catch (error) {
       console.error('Error sending notification:', error);
     }
@@ -289,6 +303,7 @@ function UploadProgressComponent() {
             savedResource,
             encodings,
             savedResource.fileTitle,
+            accountId,
           );
         } else {
           console.log('청크 업로드 미완료');

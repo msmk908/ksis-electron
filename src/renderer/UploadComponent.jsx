@@ -2,6 +2,13 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
+import fetcher from '../fetcher';
+import {
+  FILEDATA_SAVE,
+  UPLOAD_CHUNK,
+  ENCODING,
+  UPLOAD_NOTIFICATION,
+} from '../constants/api_constant';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -281,15 +288,11 @@ function UploadComponent() {
       new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
     );
 
-    return axios.post(
-      'http://localhost:8080/api/filedatasave' + `/${accountId}`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+    return fetcher.post(FILEDATA_SAVE + `/${accountId}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
       },
-    );
+    });
   };
 
   // 청크 업로드 함수
@@ -316,45 +319,39 @@ function UploadComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        const response = await axios.post(
-          'http://localhost:8080/api/upload/chunk',
-          chunkFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.min(
-                100,
-                Math.round(
-                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
-                    file.size) *
-                    100,
-                ),
-              );
-
-              // 로컬스토리지에 업로드 진행퍼센트 업데이트
-              const existingData =
-                JSON.parse(
-                  localStorage.getItem(`uploadProgress_${fileTitle}`),
-                ) || {};
-              localStorage.setItem(
-                `uploadProgress_${fileTitle}`,
-                JSON.stringify({ ...existingData, progress: percentCompleted }),
-              );
-
-              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
-              const chunkProgress = JSON.parse(
-                localStorage.getItem(`chunkProgress_${fileTitle}`),
-              );
-              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
-              localStorage.setItem(
-                `chunkProgress_${fileTitle}`,
-                JSON.stringify(chunkProgress),
-              );
-            },
+        const response = await fetcher.post(UPLOAD_CHUNK, chunkFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
           },
-        );
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.min(
+              100,
+              Math.round(
+                ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) / file.size) *
+                  100,
+              ),
+            );
+
+            // 로컬스토리지에 업로드 진행퍼센트 업데이트
+            const existingData =
+              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
+              {};
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ ...existingData, progress: percentCompleted }),
+            );
+
+            // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+            const chunkProgress = JSON.parse(
+              localStorage.getItem(`chunkProgress_${fileTitle}`),
+            );
+            chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+            localStorage.setItem(
+              `chunkProgress_${fileTitle}`,
+              JSON.stringify(chunkProgress),
+            );
+          },
+        });
 
         if (response.status !== 200) {
           throw new Error('파일 청크 업로드 실패');
@@ -416,15 +413,11 @@ function UploadComponent() {
       return acc;
     }, {});
 
-    return axios.post(
-      'http://localhost:8080/api/encoding' + `/${accountId}`,
-      encodingsWithFileNames,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
   };
 
   // 알림 데이터베이스 저장 요청 함수
@@ -436,12 +429,10 @@ function UploadComponent() {
         resourceType,
       };
 
-      await fetch('http://localhost:8080/api/upload/notification', {
-        method: 'POST',
+      await fetcher.post(UPLOAD_NOTIFICATION, requestData, {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
       });
     } catch (error) {
       console.error('Error sending notification:', error);

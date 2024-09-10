@@ -6,7 +6,7 @@ import {
   Routes,
   Route,
   useLocation,
-  useNavigate
+  useNavigate,
 } from 'react-router-dom';
 import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
@@ -28,7 +28,7 @@ function App() {
 }
 
 const RouteHandler = () => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const location = useLocation();
   const shouldHideSidebar =
     location.pathname === '/' || location.pathname === '/login';
@@ -56,29 +56,31 @@ const RouteHandler = () => {
         category,
       });
     }
-    // 트레이 종료 후 액세스토큰이 남아있으면 
-    if(accessToken){
-    fetcher.post('/check-access-token').then(response => {
-      if(response.data.logout){
-         // 로그아웃 처리
-         alert("로그아웃되었습니다.")
+    // 트레이 종료 후 액세스토큰이 남아있으면
+    if (accessToken) {
+      fetcher
+        .post('/check-access-token')
+        .then((response) => {
+          if (response.data.logout) {
+            // 로그아웃 처리
+            alert('로그아웃되었습니다.');
 
-         localStorage.removeItem('accessToken');
-         localStorage.removeItem('authority');
-         localStorage.removeItem('accountId');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('authority');
+            localStorage.removeItem('accountId');
 
-         window.location.href = '/login';
-         console.log('로그아웃');
-       } else {
-         console.log('로그인 유지');
-       }
-     })
-     .catch(() => {
-       localStorage.removeItem('accessToken');
-     });
-      }else{
-        localStorage.removeItem('accessToken');
-      }
+            window.location.href = '/login';
+            console.log('로그아웃');
+          } else {
+            console.log('로그인 유지');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('accessToken');
+        });
+    } else {
+      localStorage.removeItem('accessToken');
+    }
   }, [location.pathname]);
 
   return (
