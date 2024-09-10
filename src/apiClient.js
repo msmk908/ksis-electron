@@ -3,8 +3,7 @@ import axios from 'axios';
 
 const apiClient = axios.create({
   baseURL: 'http://localhost:8080',
-  headers: {
-  },
+  headers: {},
 });
 
 apiClient.interceptors.request.use(
@@ -17,20 +16,20 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response.status === 403) {
-      console.log("에러났습니다. 왜냐하면 액세스 토큰이 만료됐거든요.");
+      console.log('에러났습니다. 왜냐하면 액세스 토큰이 만료됐거든요.');
 
       const { data } = error.response;
-      console.log("received data :", data);
+      console.log('received data :', data);
 
-      const accessToken = localStorage.getItem("accessToken"); // 만료된 액세스 토큰 담기
-      console.log("accessToken : ", accessToken);
+      const accessToken = localStorage.getItem('accessToken'); // 만료된 액세스 토큰 담기
+      console.log('accessToken : ', accessToken);
       if (accessToken) {
         // 만료된 액세스 토큰 갱신 요청
         const response = await apiClient.post(`/get-token`, null, {
@@ -38,20 +37,20 @@ apiClient.interceptors.response.use(
             Authorization: `Bearer ${accessToken}`, // 토큰을 Authorization 헤더에 담기
           },
         });
-        console.log("received response :", response);
+        console.log('received response :', response);
 
         // 리프레시 토큰이 만료된 경우
         if (!response.data) {
-          console.log("에러났습니다. 리프레시토큰도 만료됐거든요");
-          localStorage.removeItem("accessToken");
-      
+          console.log('에러났습니다. 리프레시토큰도 만료됐거든요');
+          localStorage.removeItem('accessToken');
+
           return Promise.resolve();
         }
 
         const { accessToken: newAccessToken } = response.data;
 
         // 갱신된 액세스 토큰 저장
-        localStorage.setItem("accessToken", newAccessToken);
+        localStorage.setItem('accessToken', newAccessToken);
 
         // 갱신된 액세스 토큰으로 재요청
         error.config.headers.Authorization = `Bearer ${newAccessToken}`;
@@ -59,7 +58,7 @@ apiClient.interceptors.response.use(
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default apiClient;
