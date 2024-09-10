@@ -15,7 +15,7 @@ import Sidebar from './Sidebar'; // 사이드바 컴포넌트 import
 import Login from './Login';
 import Mac from './Mac';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
-import apiClient from '../apiClient';
+import fetcher from '../fetcher';
 
 function App() {
   return (
@@ -49,14 +49,14 @@ const RouteHandler = () => {
     const category = getCategoryByPathname(location.pathname);
     const accessToken = localStorage.getItem('accessToken');
     if (accountId && category) {
-      apiClient.post('/access-log', {
+      fetcher.post('/access-log', {
         accountId,
         category, 
       });
     }
     // 트레이 종료 후 액세스토큰이 남아있으면 
     if(accessToken){
-    apiClient.post('/check-access-token').then(response => {
+    fetcher.post('/check-access-token').then(response => {
       if(response.data.logout){
          // 로그아웃 처리
          alert("로그아웃되었습니다.")

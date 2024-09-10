@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../apiClient';
-
+import fetcher from '../fetcher';
 const Login = () => {
     const [accountId, setAccountId] = useState('');
     const [password, setPassword] = useState('');
@@ -12,49 +11,42 @@ const Login = () => {
         event.preventDefault();
         setError('');
         const credentials = { accountId, password };
-        
-
+    
         console.log("Sending credentials:", credentials); // 확인용 로그 추가
-
+    
         try {
-            const response = await fetch('http://localhost:8080/login', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(credentials),
-            }).then((res) => res.json())
-            .then(async (data) => {   
-                console.log('Received JSON data:', data);
-                if (data.accessToken) {
-                    localStorage.setItem('accessToken', data.accessToken);
-                    // localStorage.setItem('refreshToken', data.refreshToken);
-                    localStorage.setItem('accountId', accountId);
-                    alert('Login successful');
-                    navigate('/upload');
-                    
-                    // 쿼리 파라미터로 포함한 URL 생성
-                    const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
-
-                    window.electron.ipcRenderer.invoke('open-url', url);
-
-                    try {
-                        await apiClient.post('/access-log', {
-                            accountId: accountId,
-                            category: 'LOGIN',
-                        });
-                        console.log('Login access log successfully sent.');
-                    } catch (logError) {
-                        console.error('Failed to send access log:', logError);
-                    }
-                } else {
-                    setError('아이디 또는 비밀번호가 일치하지 않습니다');
+            const response = await fetcher.post('/login', credentials);
+            const data = response.data;
+            console.log('Received JSON data:', data);
+    
+            if (data.accessToken) {
+                localStorage.setItem('accessToken', data.accessToken);
+                localStorage.setItem('accountId', accountId);
+                alert('Login successful');
+                navigate('/upload');
+    
+               
+                const url = `http://172.20.20.254:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
+    
+                window.electron.ipcRenderer.invoke('open-url', url);
+    
+                try {
+                    await fetcher.post('/access-log', {
+                        accountId: accountId,
+                        category: 'LOGIN',
+                    });
+                    console.log('Login access log successfully sent.');
+                } catch (logError) {
+                    console.error('Failed to send access log:', logError);
                 }
-            })
+            } else {
+                setError('아이디 또는 비밀번호가 일치하지 않습니다');
+            }
         } catch (error) {
             alert('An error occurred: ' + error.message);
         }
     };
+    
 
     return (
         <div className="flex justify-center items-center h-screen bg-orange-100">
