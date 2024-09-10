@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
-import apiClient from '../apiClient';
+import fetcher from '../fetcher';
 import {
   FILEDATA_SAVE,
   UPLOAD_CHUNK,
@@ -288,7 +288,7 @@ function UploadComponent() {
       new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
     );
 
-    return apiClient.post(FILEDATA_SAVE, formData, {
+    return fetcher.post(FILEDATA_SAVE, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -319,7 +319,7 @@ function UploadComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        const response = await apiClient.post(UPLOAD_CHUNK, chunkFormData, {
+        const response = await fetcher.post(UPLOAD_CHUNK, chunkFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -413,7 +413,7 @@ function UploadComponent() {
       return acc;
     }, {});
 
-    return apiClient.post(ENCODING, encodingsWithFileNames, {
+    return fetcher.post(ENCODING, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -429,7 +429,7 @@ function UploadComponent() {
         resourceType,
       };
 
-      await apiClient.post(UPLOAD_NOTIFICATION, requestData, {
+      await fetcher.post(UPLOAD_NOTIFICATION, requestData, {
         headers: {
           'Content-Type': 'application/json',
         },

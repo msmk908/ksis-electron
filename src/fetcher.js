@@ -1,12 +1,12 @@
-// src/api/apiClient.js
+// src/api/fetcher.js
 import axios from 'axios';
 
-const apiClient = axios.create({
+const fetcher = axios.create({
   baseURL: 'http://localhost:8080',
   headers: {},
 });
 
-apiClient.interceptors.request.use(
+fetcher.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem('accessToken');
     if (accessToken) {
@@ -19,7 +19,7 @@ apiClient.interceptors.request.use(
   },
 );
 
-apiClient.interceptors.response.use(
+fetcher.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response.status === 403) {
@@ -32,7 +32,7 @@ apiClient.interceptors.response.use(
       console.log('accessToken : ', accessToken);
       if (accessToken) {
         // 만료된 액세스 토큰 갱신 요청
-        const response = await apiClient.post(`/get-token`, null, {
+        const response = await fetcher.post(`/get-token`, null, {
           headers: {
             Authorization: `Bearer ${accessToken}`, // 토큰을 Authorization 헤더에 담기
           },
@@ -61,4 +61,4 @@ apiClient.interceptors.response.use(
   },
 );
 
-export default apiClient;
+export default fetcher;

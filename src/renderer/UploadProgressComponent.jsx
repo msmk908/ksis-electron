@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import 'tailwindcss/tailwind.css';
 import videoIcon from '../../assets/icons/video-file.png';
 import axios from 'axios';
-import apiClient from '../apiClient';
+import fetcher from '../fetcher';
 import {
   FILEDATA_SAVE,
   UPLOAD_CHUNK,
@@ -101,7 +101,7 @@ function UploadProgressComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        const response = await apiClient.post(UPLOAD_CHUNK, chunkFormData, {
+        const response = await fetcher.post(UPLOAD_CHUNK, chunkFormData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -213,7 +213,7 @@ function UploadProgressComponent() {
       },
     };
 
-    return apiClient.post(ENCODING, encodingsWithFileNames, {
+    return fetcher.post(ENCODING, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',
       },
@@ -229,7 +229,7 @@ function UploadProgressComponent() {
         resourceType,
       };
 
-      const response = await apiClient.post(UPLOAD_NOTIFICATION, requestData, {
+      const response = await fetcher.post(UPLOAD_NOTIFICATION, requestData, {
         headers: {
           'Content-Type': 'application/json',
         },

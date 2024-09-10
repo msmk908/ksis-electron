@@ -15,7 +15,7 @@ import Login from './Login';
 import Mac from './Mac';
 import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
-import apiClient from '../apiClient';
+import apiClient from '../fetcher';
 
 function App() {
   return (

@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
-import apiClient from '../apiClient';
+import apiClient from '../fetcher';
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
@@ -55,16 +55,16 @@ const Sidebar: React.FC = () => {
                 // 서버로 로그아웃 요청 전송
                 await apiClient.delete(`/logout/${accountId}`);
 
-                await apiClient.post('/access-log',{
+                await apiClient.post('/access-log', {
                   accountId,
                   category: 'LOGOUT',
-                })
+                });
                 // 로그아웃 성공 시 로컬스토리지 토큰 제거
                 localStorage.removeItem('accessToken');
                 localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accountId');
               } catch (error) {
-                console.error("로그아웃 실패: ", error);
+                console.error('로그아웃 실패: ', error);
               }
             }}
             className={({ isActive }) =>
