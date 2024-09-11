@@ -10,16 +10,16 @@ const Sidebar: React.FC = () => {
 
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
-    let eventSource = new EventSource('http://172.20.20.254:8080/events');
+    let eventSource = new EventSource('http://localhost:8080/events');
     const accountId = localStorage.getItem('accountId');
-    
+
     console.log('User ID:', accountId);
     if (accountId) {
       setAccountId(accountId);
     }
-    
+
     eventSource.addEventListener('logout', (event) => {
-      alert("로그아웃 되었습니다.");
+      alert('로그아웃 되었습니다.');
       // 로컬 스토리지에서 액세스 토큰 제거
       localStorage.removeItem('accessToken');
       localStorage.removeItem('authority');
@@ -28,9 +28,8 @@ const Sidebar: React.FC = () => {
       window.location.href = '/login';
       console.log('로그아웃 이벤트 수신:', event.data);
       // SSE 연결 종료
-      eventSource.close();  // 로그아웃 후 SSE 연결 종료
+      eventSource.close(); // 로그아웃 후 SSE 연결 종료
     });
-
   }, []); // 빈 배열을 의존성으로 하여 컴포넌트가 처음 마운트될 때만 실행됨
 
   return (
@@ -71,16 +70,16 @@ const Sidebar: React.FC = () => {
                 // 서버로 로그아웃 요청 전송
                 await fetcher.delete(`/logout/${accountId}`);
 
-                await fetcher.post('/access-log',{
+                await fetcher.post('/access-log', {
                   accountId,
                   category: 'LOGOUT',
-                })
+                });
                 // 로그아웃 성공 시 로컬스토리지 토큰 제거
                 localStorage.removeItem('accessToken');
                 // localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accountId');
               } catch (error) {
-                console.error("로그아웃 실패: ", error);
+                console.error('로그아웃 실패: ', error);
               }
             }}
             className={({ isActive }) =>

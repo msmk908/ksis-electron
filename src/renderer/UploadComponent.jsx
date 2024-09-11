@@ -2,6 +2,13 @@ import React, { useState, useRef } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
+import fetcher from '../fetcher';
+import {
+  FILEDATA_SAVE,
+  UPLOAD_CHUNK,
+  ENCODING,
+  UPLOAD_NOTIFICATION,
+} from '../constants/api_constant';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -11,6 +18,9 @@ function UploadComponent() {
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
+
+  // 로컬스토리지에서 accountId 가져오기
+  const accountId = localStorage.getItem('accountId');
 
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
@@ -258,6 +268,7 @@ function UploadComponent() {
 
         // 하나의 DTO에 해당하는 데이터를 JSON으로 변환하여 추가
         const dto = {
+          account: accountId,
           fileTitle: fileTitle,
           playTime: playTime,
           format: format,
@@ -277,7 +288,7 @@ function UploadComponent() {
       new Blob([JSON.stringify(dtos)], { type: 'application/json' }),
     );
 
-    return axios.post('http://localhost:8080/api/filedatasave', formData, {
+    return fetcher.post(FILEDATA_SAVE + `/${accountId}`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -308,45 +319,39 @@ function UploadComponent() {
       chunkFormData.append('totalChunks', totalChunks);
 
       try {
-        const response = await axios.post(
-          'http://localhost:8080/api/upload/chunk',
-          chunkFormData,
-          {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.min(
-                100,
-                Math.round(
-                  ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) /
-                    file.size) *
-                    100,
-                ),
-              );
-
-              // 로컬스토리지에 업로드 진행퍼센트 업데이트
-              const existingData =
-                JSON.parse(
-                  localStorage.getItem(`uploadProgress_${fileTitle}`),
-                ) || {};
-              localStorage.setItem(
-                `uploadProgress_${fileTitle}`,
-                JSON.stringify({ ...existingData, progress: percentCompleted }),
-              );
-
-              // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
-              const chunkProgress = JSON.parse(
-                localStorage.getItem(`chunkProgress_${fileTitle}`),
-              );
-              chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
-              localStorage.setItem(
-                `chunkProgress_${fileTitle}`,
-                JSON.stringify(chunkProgress),
-              );
-            },
+        const response = await fetcher.post(UPLOAD_CHUNK, chunkFormData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
           },
-        );
+          onUploadProgress: (progressEvent) => {
+            const percentCompleted = Math.min(
+              100,
+              Math.round(
+                ((chunkIndex * CHUNK_SIZE + progressEvent.loaded) / file.size) *
+                  100,
+              ),
+            );
+
+            // 로컬스토리지에 업로드 진행퍼센트 업데이트
+            const existingData =
+              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
+              {};
+            localStorage.setItem(
+              `uploadProgress_${fileTitle}`,
+              JSON.stringify({ ...existingData, progress: percentCompleted }),
+            );
+
+            // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
+            const chunkProgress = JSON.parse(
+              localStorage.getItem(`chunkProgress_${fileTitle}`),
+            );
+            chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
+            localStorage.setItem(
+              `chunkProgress_${fileTitle}`,
+              JSON.stringify(chunkProgress),
+            );
+          },
+        });
 
         if (response.status !== 200) {
           throw new Error('파일 청크 업로드 실패');
@@ -364,6 +369,21 @@ function UploadComponent() {
             `chunkProgress_${fileTitle}`,
             JSON.stringify(existingData),
           );
+
+          // 파일 업로드 되었을 때 토스트 알림
+          // 메인 프로세스에 알림 전송
+          window.electron.uploadComplete(fileTitle);
+
+          // 파일 타입에 따른 resourceType 설정
+          let resourceType = '';
+          if (file.type.startsWith('video/')) {
+            resourceType = 'VIDEO';
+          } else if (file.type.startsWith('image/')) {
+            resourceType = 'IMAGE';
+          }
+
+          // 알림 저장 함수 호출
+          uploadNotification(accountId, fileTitle, resourceType);
         }
       } catch (error) {
         if (axios.isCancel(error)) {
@@ -377,24 +397,46 @@ function UploadComponent() {
   };
 
   // 인코딩 요청 함수
-  const requestEncoding = async (files, savedResources, encodings, titles) => {
+  const requestEncoding = async (
+    files,
+    savedResources,
+    encodings,
+    titles,
+    accountId,
+  ) => {
     const encodingsWithFileNames = files.reduce((acc, file, index) => {
       acc[savedResources[index].filename] = {
         encodings: encodings[index],
         title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
+        accountId: accountId,
       };
       return acc;
     }, {});
 
-    return axios.post(
-      'http://localhost:8080/api/encoding',
-      encodingsWithFileNames,
-      {
+    return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
+  // 알림 데이터베이스 저장 요청 함수
+  const uploadNotification = async (account, message, resourceType) => {
+    try {
+      const requestData = {
+        account,
+        message,
+        resourceType,
+      };
+
+      await fetcher.post(UPLOAD_NOTIFICATION, requestData, {
         headers: {
           'Content-Type': 'application/json',
         },
-      },
-    );
+      });
+    } catch (error) {
+      console.error('Error sending notification:', error);
+    }
   };
 
   // 업로드 버튼 함수
@@ -493,6 +535,7 @@ function UploadComponent() {
             uploadedResources,
             uploadedEncodings,
             uploadedTitles,
+            accountId,
           );
         } else {
           console.log('청크 업로드 미완료');

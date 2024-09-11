@@ -6,7 +6,7 @@ import {
   Routes,
   Route,
   useLocation,
-  useNavigate
+  useNavigate,
 } from 'react-router-dom';
 import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
@@ -14,24 +14,26 @@ import UploadProgressComponent from './UploadProgressComponent';
 import Sidebar from './Sidebar'; // 사이드바 컴포넌트 import
 import Login from './Login';
 import Mac from './Mac';
+import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
 
 function App() {
   return (
     <Router>
+      <EncodingComplete />
       <RouteHandler />
     </Router>
   );
 }
 
 const RouteHandler = () => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const location = useLocation();
   const shouldHideSidebar =
     location.pathname === '/' || location.pathname === '/login';
 
-    // 경로에 따라 카테고리 ENUM 값 매핑
+  // 경로에 따라 카테고리 ENUM 값 매핑
   const getCategoryByPathname = (pathname: string): string | null => {
     switch (pathname) {
       case '/upload':
@@ -51,32 +53,34 @@ const RouteHandler = () => {
     if (accountId && category) {
       fetcher.post('/access-log', {
         accountId,
-        category, 
+        category,
       });
     }
-    // 트레이 종료 후 액세스토큰이 남아있으면 
-    if(accessToken){
-    fetcher.post('/check-access-token').then(response => {
-      if(response.data.logout){
-         // 로그아웃 처리
-         alert("로그아웃되었습니다.")
+    // 트레이 종료 후 액세스토큰이 남아있으면
+    if (accessToken) {
+      fetcher
+        .post('/check-access-token')
+        .then((response) => {
+          if (response.data.logout) {
+            // 로그아웃 처리
+            alert('로그아웃되었습니다.');
 
-         localStorage.removeItem('accessToken');
-         localStorage.removeItem('authority');
-         localStorage.removeItem('accountId');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('authority');
+            localStorage.removeItem('accountId');
 
-         window.location.href = '/login';
-         console.log('로그아웃');
-       } else {
-         console.log('로그인 유지');
-       }
-     })
-     .catch(() => {
-       localStorage.removeItem('accessToken');
-     });
-      }else{
-        localStorage.removeItem('accessToken');
-      }
+            window.location.href = '/login';
+            console.log('로그아웃');
+          } else {
+            console.log('로그인 유지');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('accessToken');
+        });
+    } else {
+      localStorage.removeItem('accessToken');
+    }
   }, [location.pathname]);
 
   return (
