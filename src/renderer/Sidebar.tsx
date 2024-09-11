@@ -10,7 +10,7 @@ const Sidebar: React.FC = () => {
 
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
-    let eventSource = new EventSource('http://20.20.254:8080/events');
+    let eventSource = new EventSource('http://localhost:8080/events');
     const accountId = localStorage.getItem('accountId');
 
     console.log('User ID:', accountId);
