@@ -17,6 +17,7 @@ import Mac from './Mac';
 import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
+import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
 
 function App() {
   return (
@@ -51,7 +52,7 @@ const RouteHandler = () => {
     const category = getCategoryByPathname(location.pathname);
     const accessToken = localStorage.getItem('accessToken');
     if (accountId && category) {
-      fetcher.post('/access-log', {
+      fetcher.post(ACCESS_LOG, {
         accountId,
         category,
       });
@@ -59,7 +60,7 @@ const RouteHandler = () => {
     // 트레이 종료 후 액세스토큰이 남아있으면
     if (accessToken) {
       fetcher
-        .post('/check-access-token')
+        .post(CHECK_TOKEN)
         .then((response) => {
           if (response.data.logout) {
             // 로그아웃 처리
