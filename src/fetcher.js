@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const fetcher = axios.create({
-  baseURL: 'http://localhost:8080',
+  // baseURL: 'http://localhost:8080',
+  baseURL: 'http://125.6.38.247/api',
   headers: {},
 });
 
