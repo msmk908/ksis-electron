@@ -7,6 +7,7 @@ export const ENCODING = '/api/encoding';
 export const UPLOAD_NOTIFICATION = '/api/upload/notification';
 
 // log
+export const UPLOAD_LOG = '/upload-log';
 export const ACCESS_LOG = '/access-log';
 
 // log
@@ -21,5 +22,3 @@ export const CHECK_TOKEN = '/check-access-token';
 
 // SSE
 export const EVENT = 'http://localhost:8080/events';
-
-

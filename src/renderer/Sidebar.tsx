@@ -4,7 +4,7 @@ import { NavLink } from 'react-router-dom';
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
-import { EVENT, ACCESS_LOG} from '../constants/api_constant';
+import { EVENT, ACCESS_LOG } from '../constants/api_constant';
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');

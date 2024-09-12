@@ -50,7 +50,7 @@ const RouteHandler = () => {
   useEffect(() => {
     const accountId = localStorage.getItem('accountId'); // 세션에서 accountId를 가져옴
     const category = getCategoryByPathname(location.pathname);
-  
+
     if (accountId && category) {
       localStorage.setItem('currentRoute', location.pathname);
       fetcher.post(ACCESS_LOG, {
@@ -66,7 +66,7 @@ const RouteHandler = () => {
 
     if (accessToken) {
       fetcher
-        .post(CHECK_TOKEN)  // 로그인 상태 확인
+        .post(CHECK_TOKEN) // 로그인 상태 확인
         .then((response) => {
           if (response.data.logout) {
             // 로그아웃 처리

@@ -9,6 +9,7 @@ import {
   UPLOAD_CHUNK,
   ENCODING,
   UPLOAD_NOTIFICATION,
+  UPLOAD_LOG,
 } from '../constants/api_constant';
 
 function UploadProgressComponent() {
@@ -76,6 +77,19 @@ function UploadProgressComponent() {
       window.removeEventListener('storage', readPausedFiles); // 컴포넌트 언마운트 시 이벤트 제거
     };
   }, []);
+
+  // 업로드, 인코딩 관련 로그
+  const uploadLog = (accountId, message) => {
+    const dto = {
+      accountId: accountId,
+      message: message,
+    };
+    fetcher.post(UPLOAD_LOG, dto, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+  };
 
   // 청크 업로드 함수
   const uploadChunks = async (file, savedResource, fileTitle, chunkindex) => {
@@ -182,6 +196,9 @@ function UploadProgressComponent() {
 
           console.log('Resource Type:', resourceType);
 
+          // 업로드 로그 저장
+          uploadLog(accountId, `${fileTitle} 업로드 완료`);
+
           // 알림 저장 함수 호출
           uploadNotification(accountId, fileTitle, resourceType);
         }
@@ -204,7 +221,6 @@ function UploadProgressComponent() {
     title,
     accountId,
   ) => {
-    console.log('인코딩 요청');
     const encodingsWithFileNames = {
       [savedResource.filename]: {
         encodings: encoding, // 단일 파일의 인코딩 정보
