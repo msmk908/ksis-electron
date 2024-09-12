@@ -17,6 +17,7 @@ import Mac from './Mac';
 import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
+import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
 
 function App() {
   return (
@@ -49,29 +50,37 @@ const RouteHandler = () => {
   useEffect(() => {
     const accountId = localStorage.getItem('accountId'); // 세션에서 accountId를 가져옴
     const category = getCategoryByPathname(location.pathname);
-    const accessToken = localStorage.getItem('accessToken');
+
     if (accountId && category) {
-      fetcher.post('/access-log', {
+      localStorage.setItem('currentRoute', location.pathname);
+      fetcher.post(ACCESS_LOG, {
         accountId,
         category,
       });
     }
-    // 트레이 종료 후 액세스토큰이 남아있으면
+  }, [location.pathname]); // location.pathname이 바뀔 때마다 실행
+
+  // CHECK_TOKEN은 최초에 앱이 열렸을 때만 실행
+  useEffect(() => {
+    const accessToken = localStorage.getItem('accessToken');
+
     if (accessToken) {
       fetcher
-        .post('/check-access-token')
+        .post(CHECK_TOKEN) // 로그인 상태 확인
         .then((response) => {
           if (response.data.logout) {
             // 로그아웃 처리
             alert('로그아웃되었습니다.');
-
             localStorage.removeItem('accessToken');
             localStorage.removeItem('authority');
             localStorage.removeItem('accountId');
+            localStorage.removeItem('currentRoute');
 
             window.location.href = '/login';
             console.log('로그아웃');
           } else {
+            const savedRoute = localStorage.getItem('currentRoute');
+            navigate(savedRoute as string);
             console.log('로그인 유지');
           }
         })
@@ -81,7 +90,7 @@ const RouteHandler = () => {
     } else {
       localStorage.removeItem('accessToken');
     }
-  }, [location.pathname]);
+  }, []);
 
   return (
     <div className="flex">

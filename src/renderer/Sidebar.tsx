@@ -4,13 +4,14 @@ import { NavLink } from 'react-router-dom';
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
+import { EVENT, ACCESS_LOG } from '../constants/api_constant';
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
 
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
-    let eventSource = new EventSource('http://localhost:8080/events');
+    let eventSource = new EventSource(EVENT);
     const accountId = localStorage.getItem('accountId');
 
     console.log('User ID:', accountId);
@@ -70,7 +71,7 @@ const Sidebar: React.FC = () => {
                 // 서버로 로그아웃 요청 전송
                 await fetcher.delete(`/logout/${accountId}`);
 
-                await fetcher.post('/access-log', {
+                await fetcher.post(ACCESS_LOG, {
                   accountId,
                   category: 'LOGOUT',
                 });

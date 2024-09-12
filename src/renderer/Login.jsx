@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import fetcher from '../fetcher';
+import { ACCESS_LOG, LOGIN } from '../constants/api_constant';
 const Login = () => {
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
@@ -15,7 +16,7 @@ const Login = () => {
     console.log('Sending credentials:', credentials); // 확인용 로그 추가
 
     try {
-      const response = await fetcher.post('/login', credentials);
+      const response = await fetcher.post(LOGIN, credentials);
       const data = response.data;
       console.log('Received JSON data:', data);
 
@@ -30,7 +31,7 @@ const Login = () => {
         window.electron.ipcRenderer.invoke('open-url', url);
 
         try {
-          await fetcher.post('/access-log', {
+          await fetcher.post(ACCESS_LOG, {
             accountId: accountId,
             category: 'LOGIN',
           });

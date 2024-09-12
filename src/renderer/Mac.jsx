@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
+import { MAC } from '../constants/api_constant';
 
 const Mac = () => {
   const [macAddress, setMacAddress] = useState(null);
@@ -22,7 +23,7 @@ const Mac = () => {
       }
 
        // MAC 주소를 서버로 전송하여 검증 요청
-       const response = await fetcher.post('/mac', { mac });
+       const response = await fetcher.post(MAC, { mac });
 
        // 서버로부터 받은 메시지에 따라 행동 결정
        if (response.data.success) {
