@@ -8,6 +8,7 @@ import {
   UPLOAD_CHUNK,
   ENCODING,
   UPLOAD_NOTIFICATION,
+  UPLOAD_LOG,
 } from '../constants/api_constant';
 
 function UploadComponent() {
@@ -235,6 +236,15 @@ function UploadComponent() {
     });
   };
 
+  // 업로드, 인코딩 관련 로그
+  const uploadLog = (accountId, message) => {
+    const dto = {
+      accountId: accountId,
+      message: message,
+    };
+    fetcher.post(UPLOAD_LOG, dto);
+  };
+
   // 메타데이터 저장 함수
   const saveMetadata = async (files, titles, resolutions) => {
     const formData = new FormData();
@@ -381,6 +391,9 @@ function UploadComponent() {
           } else if (file.type.startsWith('image/')) {
             resourceType = 'IMAGE';
           }
+
+          // 업로드 완료 로그
+          uploadLog(accountId, `${fileTitle} 업로드 완료`);
 
           // 알림 저장 함수 호출
           uploadNotification(accountId, fileTitle, resourceType);
