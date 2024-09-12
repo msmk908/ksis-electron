@@ -13,6 +13,7 @@ import {
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
+  const [filePreview, setFilePreviews] = useState({}); // 파일 미리보기 URL 저장
   const [titles, setTitles] = useState({}); // 파일 제목 저장
   const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
@@ -51,6 +52,14 @@ function UploadComponent() {
 
       return updatedFiles;
     });
+
+    newFiles.forEach((file, index) => {
+      const fileUrl = URL.createObjectURL(file);
+      setFilePreviews((prevPreviews) => ({
+        ...prevPreviews,
+        [files.length + index]: fileUrl,
+      }));
+    });
   };
 
   // 드래그 드롭 메서드
@@ -84,6 +93,15 @@ function UploadComponent() {
 
       return updatedFiles;
     });
+
+    // 미리보기 URL 추가
+    newFiles.forEach((file, index) => {
+      const fileUrl = URL.createObjectURL(file);
+      setFilePreviews((prevPreviews) => ({
+        ...prevPreviews,
+        [files.length + index]: fileUrl,
+      }));
+    });
   };
 
   // 파일 삭제 핸들러
@@ -109,6 +127,13 @@ function UploadComponent() {
       setTitles(updatedTitles);
 
       return updatedFiles;
+    });
+
+    // 미리보기 URL 제거
+    setFilePreviews((prevPreviews) => {
+      const updatedPreviews = { ...prevPreviews };
+      delete updatedPreviews[index];
+      return updatedPreviews;
     });
   };
 
@@ -575,122 +600,15 @@ function UploadComponent() {
         )}
 
         <div className="p-10">
-          {files.map((file, fileIndex) => {
-            const isImage = file.type.startsWith('image/');
-            const isVideo = file.type.startsWith('video/');
-            const fileUrl = URL.createObjectURL(file); // 파일의 URL 생성
-
-            return (
-              <div
-                key={fileIndex}
-                className="relative border p-4 mt-4 mb-4 rounded-md shadow-sm flex"
-                onClick={handleChildClick}
-              >
-                <button
-                  onClick={() => handleFileDelete(fileIndex)}
-                  className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                >
-                  &times;
-                </button>
-                <div className="w-1/2 pr-4">
-                  {isImage ? (
-                    <img
-                      src={fileUrl}
-                      alt={file.name}
-                      className="w-full h-auto object-cover"
-                    />
-                  ) : isVideo ? (
-                    <video
-                      src={fileUrl}
-                      className="w-full h-auto object-cover"
-                      controls
-                    />
-                  ) : (
-                    <p>미리보기 불가</p>
-                  )}
-                </div>
-
-                <div className="w-1/2 pr-4">
-                  <label className="block mb-2 font-bold">{file.name}</label>
-                  <input
-                    type="text"
-                    placeholder="제목을 입력해주세요."
-                    className="p-2 border rounded-md w-full mb-4"
-                    value={titles[fileIndex] || ''}
-                    onChange={(e) => handleTitleChange(fileIndex, e)}
-                  />
-
-                  {encodings[fileIndex]?.map((encoding, encodingIndex) => (
-                    <div key={encodingIndex} className="flex space-x-4 mb-4">
-                      <div className="w-1/4">
-                        <select
-                          className="p-2 border rounded-md w-full"
-                          value={encoding.format}
-                          onChange={(e) =>
-                            handleFormatChange(fileIndex, encodingIndex, e)
-                          }
-                        >
-                          {isImage ? (
-                            <>
-                              <option value="png">PNG</option>
-                              <option value="jpg">JPG</option>
-                              <option value="bmp">BMP</option>
-                            </>
-                          ) : (
-                            <>
-                              <option value="mp4">MP4</option>
-                              <option value="mov">MOV</option>
-                              <option value="avi">AVI</option>
-                              <option value="mkv">MKV</option>
-                            </>
-                          )}
-                        </select>
-                      </div>
-
-                      <div className="w-1/4">
-                        <select
-                          className="p-2 border rounded-md w-full"
-                          value={encoding.resolution}
-                          onChange={(e) =>
-                            handleResolutionChange(fileIndex, encodingIndex, e)
-                          }
-                        >
-                          <option value="720p">720p</option>
-                          <option value="1080p">1080p</option>
-                          <option value="4k">4K</option>
-                        </select>
-                      </div>
-
-                      {encodingIndex === encodings[fileIndex].length - 1 && (
-                        <>
-                          <div className="w-1/4">
-                            <button
-                              className="w-full p-2 bg-blue-500 text-white rounded"
-                              onClick={() => addEncoding(fileIndex)}
-                            >
-                              +
-                            </button>
-                          </div>
-
-                          <div className="w-1/4">
-                            <button
-                              className="w-full p-2 bg-red-500 text-white rounded"
-                              onClick={() =>
-                                removeEncoding(fileIndex, encodingIndex)
-                              }
-                              disabled={encodings[fileIndex].length <= 1}
-                            >
-                              -
-                            </button>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+          {files.map((file, index) => (
+            <FileItem
+              key={index} // 고유한 key를 사용하여 최소한의 재렌더링
+              file={file}
+              index={index}
+              filePreview={filePreviews[index]}
+              onDelete={handleFileDelete}
+            />
+          ))}
         </div>
 
         <input
