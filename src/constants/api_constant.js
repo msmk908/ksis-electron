@@ -10,7 +10,7 @@ export const UPLOAD_NOTIFICATION = '/api/upload/notification';
 export const UPLOAD_LOG = '/upload-log';
 export const ACCESS_LOG = '/access-log';
 
-// log
+// login
 export const LOGIN = '/login';
 export const LOGOUT = `/logout`;
 
@@ -21,4 +21,4 @@ export const MAC = '/mac';
 export const CHECK_TOKEN = '/check-access-token';
 
 // SSE
-export const EVENT = 'http://localhost:8080/events';
+export const EVENT = '/events';

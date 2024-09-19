@@ -18,6 +18,7 @@ import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
 import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
   return (
@@ -96,12 +97,14 @@ const RouteHandler = () => {
     <div className="flex">
       {/* 사이드바를 조건부로 렌더링 */}
       {!shouldHideSidebar && <Sidebar />}
-      <div className={`flex-1 ${!shouldHideSidebar ? 'ml-64' : ''} p-4`}>
+      <div className={`flex-1 ${!shouldHideSidebar ? 'ml-64' : ''}`}>
         <Routes>
           <Route path="/" element={<Mac />} />
           <Route path="/login" element={<Login />} />
+          <Route element={<ProtectedRoute/>}>
           <Route path="/upload" element={<UploadComponent />} />
           <Route path="/uploadProgress" element={<UploadProgressComponent />} />
+          </Route>
         </Routes>
       </div>
     </div>

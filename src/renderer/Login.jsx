@@ -7,12 +7,13 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const credentials = { accountId, password };
+  const WEB_BASE_URL = window.env.WEB_BASE_URL;
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    const credentials = { accountId, password };
-
+    
     console.log('Sending credentials:', credentials); // 확인용 로그 추가
 
     try {
@@ -26,10 +27,9 @@ const Login = () => {
         alert('Login successful');
         navigate('/upload');
 
-        const url = `http://localhost:3000/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
-
+        const url = `${WEB_BASE_URL}/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
         window.electron.ipcRenderer.invoke('open-url', url);
-
+        console.log(url);
         try {
           await fetcher.post(ACCESS_LOG, {
             accountId: accountId,
