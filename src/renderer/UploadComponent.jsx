@@ -130,10 +130,14 @@ function UploadComponent() {
       return updatedFiles;
     });
 
-    // 미리보기 URL 제거
+    // 미리보기 URL 제거 및 재정렬
     setFilePreviews((prevPreviews) => {
-      const updatedPreviews = { ...prevPreviews };
-      delete updatedPreviews[index];
+      const updatedPreviews = {};
+      files
+        .filter((_, i) => i !== index) // 파일 삭제된 것 제외
+        .forEach((file, i) => {
+          updatedPreviews[i] = prevPreviews[i >= index ? i + 1 : i];
+        });
       return updatedPreviews;
     });
   };
@@ -185,10 +189,6 @@ function UploadComponent() {
 
   const handleAreaClick = () => {
     fileInputRef.current.click();
-  };
-
-  const handleChildClick = (e) => {
-    e.stopPropagation();
   };
 
   // 파일의 정보를 가져오는 함수
@@ -601,20 +601,26 @@ function UploadComponent() {
             파일 첨부 영역
           </p>
         )}
-
         <div className="p-10">
-          {files.map((file, index) => (
-            <FileItem
-              key={index} // 고유한 key를 사용하여 최소한의 재렌더링
-              file={file}
-              index={index}
-              filePreview={filePreview[index]}
-              onDelete={handleFileDelete}
-              onTitleChange={handleTitleChange}
-            />
-          ))}
+          {files.map((file, fileIndex) => {
+            return (
+              <FileItem
+                key={fileIndex}
+                file={file}
+                fileIndex={fileIndex}
+                filePreview={filePreview[fileIndex]}
+                titles={titles}
+                encodings={encodings}
+                handleTitleChange={handleTitleChange}
+                handleFormatChange={handleFormatChange}
+                handleResolutionChange={handleResolutionChange}
+                addEncoding={addEncoding}
+                removeEncoding={removeEncoding}
+                handleFileDelete={handleFileDelete}
+              />
+            );
+          })}
         </div>
-
         <input
           type="file"
           multiple
