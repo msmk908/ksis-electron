@@ -1,27 +1,30 @@
 import os from 'node:os';
 import path from 'path';
 import fs from 'fs'; // fs 모듈 추가
-import { app, BrowserWindow, shell, ipcMain, Tray, Menu } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  shell,
+  ipcMain,
+  Tray,
+  Menu,
+  Notification,
+} from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import notifier from 'node-notifier';
 
 const platform = os.platform(); // 현재 플랫폼
 
 // 일랙트론 아이콘 경로
 const getIconPath = () => {
-  const defaultPath = path.join(process.resourcesPath, 'assets/icon.png');
-  const fallbackPath = path.join(__dirname, '../../assets/icon.png');
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'assets', 'icon.png')
+    : path.join(__dirname, '../../assets/icon.png');
 
-  // 기본 경로의 파일 존재 여부 확인
-  if (fs.existsSync(defaultPath)) {
-    return defaultPath;
-  } else {
-    // 기본 경로가 존재하지 않으면 대체 경로 사용
-    return fallbackPath;
-  }
+  console.log('Icon Path: ', iconPath); // 경로를 콘솔에 출력
+  return iconPath;
 };
 
 class AppUpdater {
@@ -126,6 +129,8 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
     autoHideMenuBar: true,
   });
@@ -215,25 +220,26 @@ ipcMain.handle('open-url', (event, url) => {
 
 // 원본 업로드 토스트 알림 통신
 ipcMain.handle('upload-complete', (event, fileTitle) => {
-  console.log('fileTitle: ' + fileTitle);
-  notifier.notify({
+  const icon = getIconPath();
+  const notification = new Notification({
     title: '업로드 완료',
-    message: `${fileTitle} 파일이 성공적으로 업로드되었습니다`,
-    icon: getIconPath(),
-    timeout: 3,
-    wait: false,
+    body: `${fileTitle} 파일이 성공적으로 업로드되었습니다`,
+    icon: icon,
   });
+
+  notification.show();
 });
 
 // 인코딩 업로드 토스트 알림 통신
 ipcMain.handle('encoding-complete', (event, fileTitle) => {
-  notifier.notify({
+  const icon = getIconPath();
+  const notification = new Notification({
     title: '인코딩 완료',
-    message: `${fileTitle} 인코딩이 성공적으로 완료되었습니다`,
-    icon: getIconPath(),
-    timeout: 3,
-    wait: false,
+    body: `${fileTitle} 인코딩이 성공적으로 완료되었습니다`,
+    icon: icon,
   });
+
+  notification.show();
 });
 
 /**
