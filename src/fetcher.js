@@ -1,7 +1,11 @@
 import axios from 'axios';
 
+// const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+const API_BASE_URL = window.env.API_BASE_URL;
+console.log('Renderer API_BASE_URL', API_BASE_URL);
+
 const fetcher = axios.create({
-  baseURL: 'http://localhost:8080',
+  baseURL: API_BASE_URL,
   headers: {},
 });
 
@@ -11,7 +15,7 @@ fetcher.interceptors.request.use(
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
-    return config;
+    return config;  
   },
   (error) => {
     return Promise.reject(error);

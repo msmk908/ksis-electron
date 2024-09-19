@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG } from '../constants/api_constant';
 
+const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
+const SSE_URL = `${API_BASE_URL}${EVENT}`;
+
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
+  const navigate = useNavigate();
 
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
-    let eventSource = new EventSource(EVENT);
+    let eventSource = new EventSource(SSE_URL);
     const accountId = localStorage.getItem('accountId');
 
     console.log('User ID:', accountId);
@@ -26,7 +30,7 @@ const Sidebar: React.FC = () => {
       localStorage.removeItem('authority');
       localStorage.removeItem('accountId');
       // 로그인 페이지로 리디렉션
-      window.location.href = '/login';
+      navigate('/login');
       console.log('로그아웃 이벤트 수신:', event.data);
       // SSE 연결 종료
       eventSource.close(); // 로그아웃 후 SSE 연결 종료
@@ -79,6 +83,7 @@ const Sidebar: React.FC = () => {
                 localStorage.removeItem('accessToken');
                 // localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accountId');
+                localStorage.removeItem('currentRoute');
               } catch (error) {
                 console.error('로그아웃 실패: ', error);
               }

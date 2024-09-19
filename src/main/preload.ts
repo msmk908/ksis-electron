@@ -40,6 +40,10 @@ const electronHandler = {
     return ipcRenderer.invoke('get-mac-address');
   },
 
+  // getIpAddress() {
+  //   return ipcRenderer.invoke('get-ip-address');
+  // },
+
   // 파일을 가져오는 함수 추가
   getFile(filePath: string) {
     return ipcRenderer.invoke('get-file', filePath);
@@ -57,5 +61,15 @@ const electronHandler = {
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
+
+const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
+const webBaseUrl = process.env.REACT_APP_WEB_BASE_URL;
+console.log('apiBaseUrl : ', apiBaseUrl);
+console.log('webBaseUrl : ', webBaseUrl);
+
+contextBridge.exposeInMainWorld('env', {
+  API_BASE_URL: apiBaseUrl,
+  WEB_BASE_URL: webBaseUrl,
+});
 
 export type ElectronHandler = typeof electronHandler;
