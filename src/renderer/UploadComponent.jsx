@@ -3,6 +3,7 @@ import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
 import fetcher from '../fetcher';
+import FileItem from './FileItem';
 import {
   FILEDATA_SAVE,
   UPLOAD_CHUNK,
@@ -142,9 +143,11 @@ function UploadComponent() {
   };
 
   // 제목 설정
-  const handleTitleChange = (index, e) => {
-    const newTitles = { ...titles, [index]: e.target.value };
-    setTitles(newTitles);
+  const handleTitleChange = (index, newTitle) => {
+    setTitles((prevTitles) => ({
+      ...prevTitles,
+      [index]: newTitle,
+    }));
   };
 
   // 포맷 설정
@@ -605,8 +608,9 @@ function UploadComponent() {
               key={index} // 고유한 key를 사용하여 최소한의 재렌더링
               file={file}
               index={index}
-              filePreview={filePreviews[index]}
+              filePreview={filePreview[index]}
               onDelete={handleFileDelete}
+              onTitleChange={handleTitleChange}
             />
           ))}
         </div>
