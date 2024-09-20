@@ -41,6 +41,7 @@ let mainWindow: BrowserWindow | null = null;
 // 트레이
 let tray: Tray | null = null;
 let isQuiting = false; // 앱 종료 여부를 추적하는 플래그
+// let isHiddenToTray = false; // 창이 트레이에 있는지 상태 추적
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -160,7 +161,9 @@ const createWindow = async () => {
   mainWindow.on('close', (event) => {
     if (!isQuiting) {
       event.preventDefault();
+      mainWindow?.setSkipTaskbar(true);
       mainWindow?.hide();
+      // isHiddenToTray = true; // 트레이로 숨겨졌음을 기록
     }
   });
 
@@ -283,11 +286,14 @@ if (!gotTheLock) {
     if (mainWindow) {
       if (mainWindow.isMinimized()) {
         mainWindow.restore(); // 최소화된 경우 복원
+        mainWindow.focus();
       }
-      if (!mainWindow.isVisible()) {
-        mainWindow.show(); // 숨겨진 창일 경우 보이게 하기
-      }
-      mainWindow.focus(); // 창에 포커스
+      // if (!mainWindow.isVisible() || isHiddenToTray) {
+      //   mainWindow.setSkipTaskbar(false);
+      //   mainWindow.show();
+      //   mainWindow.focus();
+      //   isHiddenToTray = false;
+      // }
       mainWindow.webContents.send('open-url', url); // URL을 렌더러 프로세스로 전달
     } else {
       // 창이 없을 때만 새로 생성
