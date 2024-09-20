@@ -20,7 +20,9 @@ const useSSE = (url) => {
 };
 
 const EncodingStatus = () => {
-  useSSE('http://localhost:8080/sse/events');
+  const API_BASE_URL = window.env.API_BASE_URL;
+
+  useSSE(API_BASE_URL + '/sse/events');
 
   return null; // 이 컴포넌트는 UI를 렌더링하지 않습니다
 };
