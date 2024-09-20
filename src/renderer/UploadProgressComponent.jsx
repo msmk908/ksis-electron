@@ -229,7 +229,7 @@ function UploadProgressComponent() {
       },
     };
 
-    return fetcher.post(ENCODING, encodingsWithFileNames, {
+    return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',
       },

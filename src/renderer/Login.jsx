@@ -13,7 +13,7 @@ const Login = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
-    
+
     console.log('Sending credentials:', credentials); // 확인용 로그 추가
 
     try {

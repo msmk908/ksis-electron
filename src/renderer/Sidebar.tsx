@@ -6,8 +6,8 @@ import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG } from '../constants/api_constant';
 
-const API_BASE_URL = window.env.API_BASE_URL;  // API Base URL 가져오기
-const SSE_URL = `${API_BASE_URL}${EVENT}`; 
+const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
+const SSE_URL = `${API_BASE_URL}${EVENT}`;
 
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
