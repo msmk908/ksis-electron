@@ -216,9 +216,9 @@ ipcMain.handle('get-mac-address', () => {
   return macAddresses[0] || null; // 첫 번째 MAC 주소를 반환하거나 없으면 null
 });
 
-// ipcMain.handle('open-url', (event, url) => {
-//   shell.openExternal(url);
-// });
+ipcMain.handle('open-url', (event, url) => {
+  shell.openExternal(url);
+});
 
 // 원본 업로드 토스트 알림 통신
 ipcMain.handle('upload-complete', (event, fileTitle) => {
