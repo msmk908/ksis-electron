@@ -12,6 +12,7 @@ import {
   UPLOAD_LOG,
   FILE_SIZE,
 } from '../constants/api_constant';
+import { UPLOAD_PROGRESS } from '../constants/page_constant';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -542,7 +543,7 @@ function UploadComponent() {
   // 업로드 버튼 함수
   const handleUpload = async () => {
     window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
-    navigate('/uploadProgress', {
+    navigate(UPLOAD_PROGRESS, {
       state: {
         files,
         titles,
