@@ -22,3 +22,6 @@ export const CHECK_TOKEN = '/check-access-token';
 
 // SSE
 export const EVENT = '/events';
+
+// fileSize
+export const FILE_SIZE = '/api/filesize';

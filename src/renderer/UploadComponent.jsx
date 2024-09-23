@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import 'tailwindcss/tailwind.css';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import {
   ENCODING,
   UPLOAD_NOTIFICATION,
   UPLOAD_LOG,
+  FILE_SIZE,
 } from '../constants/api_constant';
 
 function UploadComponent() {
@@ -18,6 +19,7 @@ function UploadComponent() {
   const [titles, setTitles] = useState({}); // 파일 제목 저장
   const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
+  const [fileSizeLimit, setFileSizeLimit] = useState({}); // 파일 크기 제한 저장
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
@@ -25,9 +27,44 @@ function UploadComponent() {
   // 로컬스토리지에서 accountId 가져오기
   const accountId = localStorage.getItem('accountId');
 
+  // 파일 크기 제한을 가져오는 함수
+  useEffect(() => {
+    const fileSizeLimit = async () => {
+      try {
+        const response = await fetcher.get(FILE_SIZE);
+        setFileSizeLimit(response.data);
+      } catch (error) {
+        console.error('파일 크기 제한을 가져오는데 실패했습니다', error);
+      }
+    };
+    fileSizeLimit();
+  }, []);
+
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
+
+    const exceededFiles = newFiles.filter((file) => {
+      if (
+        file.type.startsWith('image/') &&
+        file.size > fileSizeLimit.imageMaxSize * 1000000
+      ) {
+        return true; // 이미지 파일 크기 초과
+      }
+      if (
+        file.type.startsWith('video/') &&
+        file.size > fileSizeLimit.videoMaxSize * 1000000
+      ) {
+        return true; // 비디오 파일 크기 초과
+      }
+      return false;
+    });
+
+    if (exceededFiles.length > 0) {
+      window.alert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      return; // 파일 첨부 중단
+    }
+
     const newResolutions = await getFileInfo(newFiles, files.length); // 파일 인덱스를 전달
 
     setFiles((prevFiles) => {
@@ -69,6 +106,28 @@ function UploadComponent() {
     e.stopPropagation();
 
     const newFiles = Array.from(e.dataTransfer.files);
+
+    const exceededFiles = newFiles.filter((file) => {
+      if (
+        file.type.startsWith('image/') &&
+        file.size > fileSizeLimit.imageMaxSize * 1000000
+      ) {
+        return true; // 이미지 파일 크기 초과
+      }
+      if (
+        file.type.startsWith('video/') &&
+        file.size > fileSizeLimit.videoMaxSize * 1000000
+      ) {
+        return true; // 비디오 파일 크기 초과
+      }
+      return false;
+    });
+
+    if (exceededFiles.length > 0) {
+      window.alert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      return; // 파일 첨부 중단
+    }
+
     const newResolutions = await getFileInfo(newFiles, files.length); // 파일 인덱스를 전달
 
     setFiles((prevFiles) => {
