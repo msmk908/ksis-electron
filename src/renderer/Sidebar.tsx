@@ -4,7 +4,8 @@ import { NavLink, useNavigate } from 'react-router-dom';
 // 로고 이미지 경로를 상대 경로로 가져오기
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
-import { EVENT, ACCESS_LOG } from '../constants/api_constant';
+import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
+import { UPLOAD, UPLOAD_PROGRESS } from '../constants/page_constant';
 
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
 const SSE_URL = `${API_BASE_URL}${EVENT}`;
@@ -33,7 +34,7 @@ const Sidebar: React.FC = () => {
         localStorage.removeItem("authority");
         localStorage.removeItem("accountId");
         // 로그인 페이지로 리디렉션
-        window.location.href = "/downloadApp";
+        window.location.href = "/login";
         console.log("로그아웃 이벤트 수신:", event.data);
         // SSE 연결 종료
         eventSource.close(); // 로그아웃 후 SSE 연결 종료
@@ -48,7 +49,7 @@ const Sidebar: React.FC = () => {
       <ul className="space-y-2">
         <li>
           <NavLink
-            to="/upload"
+            to={UPLOAD}
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
@@ -60,7 +61,7 @@ const Sidebar: React.FC = () => {
         </li>
         <li>
           <NavLink
-            to="/uploadProgress"
+            to={UPLOAD_PROGRESS}
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
@@ -77,7 +78,7 @@ const Sidebar: React.FC = () => {
               const accountId = localStorage.getItem('accountId');
               try {
                 // 서버로 로그아웃 요청 전송
-                await fetcher.delete(`/logout/${accountId}`);
+                await fetcher.delete(`${LOGOUT}/${accountId}`);
 
                 await fetcher.post(ACCESS_LOG, {
                   accountId,

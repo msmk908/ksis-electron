@@ -4,6 +4,7 @@ import axios from 'axios';
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { MAC } from '../constants/api_constant';
+import { LOGIN } from '../constants/page_constant';
 
 const Mac = () => {
   const [macAddress, setMacAddress] = useState(null);
@@ -33,7 +34,7 @@ const Mac = () => {
 
        // 서버로부터 받은 메시지에 따라 행동 결정
        if (response.data.success) {
-         navigate('/login');
+         navigate(LOGIN);
        }
      } catch (error) {
        // HTTP 응답에서 메시지 읽기

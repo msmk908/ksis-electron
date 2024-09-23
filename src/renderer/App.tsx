@@ -8,6 +8,12 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+import { 
+  MAC,
+  LOGIN,
+  UPLOAD,
+  UPLOAD_PROGRESS, 
+} from '../constants/page_constant';
 import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
 import UploadProgressComponent from './UploadProgressComponent';
@@ -33,14 +39,14 @@ const RouteHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const shouldHideSidebar =
-    location.pathname === '/' || location.pathname === '/login';
+    location.pathname === MAC || location.pathname === LOGIN;
 
   // 경로에 따라 카테고리 ENUM 값 매핑
   const getCategoryByPathname = (pathname: string): string | null => {
     switch (pathname) {
-      case '/upload':
+      case UPLOAD:
         return 'UPLOAD';
-      case '/uploadProgress':
+      case UPLOAD_PROGRESS:
         return 'UPLOAD_PROGRESS';
       default:
         return null; // 로그를 남기지 않을 경우 null 반환
@@ -99,11 +105,11 @@ const RouteHandler = () => {
       {!shouldHideSidebar && <Sidebar />}
       <div className={`flex-1 ${!shouldHideSidebar ? 'ml-64' : ''}`}>
         <Routes>
-          <Route path="/" element={<Mac />} />
-          <Route path="/login" element={<Login />} />
+          <Route path={MAC} element={<Mac />} />
+          <Route path={LOGIN} element={<Login />} />
           <Route element={<ProtectedRoute/>}>
-          <Route path="/upload" element={<UploadComponent />} />
-          <Route path="/uploadProgress" element={<UploadProgressComponent />} />
+          <Route path={UPLOAD} element={<UploadComponent />} />
+          <Route path={UPLOAD_PROGRESS} element={<UploadProgressComponent />} />
           </Route>
         </Routes>
       </div>
