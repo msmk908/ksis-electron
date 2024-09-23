@@ -25,7 +25,6 @@ const getIconPath = () => {
     ? path.join(process.resourcesPath, 'assets', 'icon.png')
     : path.join(__dirname, '../../assets/icon.png');
 
-  console.log('Icon Path: ', iconPath); // 경로를 콘솔에 출력
   return iconPath;
 };
 
