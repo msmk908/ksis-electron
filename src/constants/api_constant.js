@@ -19,6 +19,7 @@ export const MAC = '/mac';
 
 // token
 export const CHECK_TOKEN = '/check-access-token';
+export const TOKEN_CALLBACK = '/get-token'; 
 
 // SSE
 export const EVENT = '/events';

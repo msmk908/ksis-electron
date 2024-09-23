@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { TOKEN_CALLBACK } from './constants/api_constant';
 
 // const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const API_BASE_URL = window.env.API_BASE_URL;
@@ -35,7 +36,7 @@ fetcher.interceptors.response.use(
       console.log('accessToken : ', accessToken);
       if (accessToken) {
         // 만료된 액세스 토큰 갱신 요청
-        const response = await fetcher.post(`/get-token`, null, {
+        const response = await fetcher.post(TOKEN_CALLBACK, null, {
           headers: {
             Authorization: `Bearer ${accessToken}`, // 토큰을 Authorization 헤더에 담기
           },
@@ -47,6 +48,7 @@ fetcher.interceptors.response.use(
           console.log('에러났습니다. 리프레시토큰도 만료됐거든요');
           localStorage.removeItem('accessToken');
           // 로그인 페이지 전환필요
+          window.location.href = '/login';
           return Promise.resolve();
         }
 

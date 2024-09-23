@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import fetcher from '../fetcher';
 import { ACCESS_LOG, LOGIN } from '../constants/api_constant';
+import { UPLOAD } from '../constants/page_constant';
+
 const Login = () => {
   const [accountId, setAccountId] = useState('');
   const [password, setPassword] = useState('');
@@ -25,7 +27,7 @@ const Login = () => {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('accountId', accountId);
         alert('Login successful');
-        navigate('/upload');
+        navigate(UPLOAD);
 
         const url = `${WEB_BASE_URL}/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
         window.electron.ipcRenderer.invoke('open-url', url);
