@@ -8,11 +8,11 @@ import {
   useLocation,
   useNavigate,
 } from 'react-router-dom';
-import { 
+import {
   MAC,
   LOGIN,
   UPLOAD,
-  UPLOAD_PROGRESS, 
+  UPLOAD_PROGRESS,
 } from '../constants/page_constant';
 import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
@@ -107,9 +107,12 @@ const RouteHandler = () => {
         <Routes>
           <Route path={MAC} element={<Mac />} />
           <Route path={LOGIN} element={<Login />} />
-          <Route element={<ProtectedRoute/>}>
-          <Route path={UPLOAD} element={<UploadComponent />} />
-          <Route path={UPLOAD_PROGRESS} element={<UploadProgressComponent />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path={UPLOAD} element={<UploadComponent />} />
+            <Route
+              path={UPLOAD_PROGRESS}
+              element={<UploadProgressComponent />}
+            />
           </Route>
         </Routes>
       </div>

@@ -168,7 +168,7 @@ function UploadProgressComponent() {
 
           // 파일 업로드 되었을 때 토스트 알림
           // 메인 프로세스에 알림 전송
-          window.electron.uploadComplete('upload-complete', fileTitle);
+          // window.electron.uploadComplete('upload-complete', fileTitle);
 
           // 파일 타입에 따른 resourceType 설정
           let resourceType = '';
@@ -321,6 +321,9 @@ function UploadProgressComponent() {
             savedResource.fileTitle,
             accountId,
           );
+
+          // 인코딩 그룹 토스트 알림
+          window.electron.encodingComplete(`${savedResource.fileTitle} 파일`);
         } else {
           console.log('청크 업로드 미완료');
         }
@@ -385,7 +388,9 @@ function UploadProgressComponent() {
           <div className="w-3/4">
             <p className="mb-1 text-lg">{fileName}</p>
             <div className="flex items-center">
-              <div className="w-11/12 bg-gray-300 rounded-full h-4 relative">
+              <div
+                className={`${progress === 100 ? 'w-full' : 'w-11/12'} bg-gray-300 rounded-full h-4 relative`}
+              >
                 <div
                   className={`h-4 rounded-full ${
                     progress === 100 ? 'bg-green-600' : 'bg-blue-600'
@@ -408,19 +413,12 @@ function UploadProgressComponent() {
                   </button>
                 </div>
               )}
-              {progress === 100 && (
-                <div className="w-1/12 text-right pl-2">
-                  <button
-                    onClick={() => handleDelete(fileName)}
-                    className="bg-red-500 text-white font-bold px-2 py-1 rounded-full hover:bg-red-700 transition duration-300 ease-in-out"
-                    title="Remove"
-                  >
-                    ✕
-                  </button>
-                </div>
-              )}
             </div>
-            <p className="text-right text-sm mt-1">{progress}%</p>
+            {progress < 100 ? (
+              <p className="text-right text-sm mt-1">{progress}%</p>
+            ) : (
+              <p className="text-right text-sm mt-1">업로드 완료</p>
+            )}
           </div>
         </div>
       ))}

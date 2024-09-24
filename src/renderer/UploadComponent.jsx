@@ -688,9 +688,15 @@ function UploadComponent() {
           );
 
           // 인코딩 그룹 토스트 알림
-          window.electron.encodingComplete(
-            `${uploadedResources[0].fileTitle} 등 ${uploadedResources.length}개 파일`,
-          );
+          if (uploadedResources.length == 1) {
+            window.electron.encodingComplete(
+              `${uploadedResources[0].fileTitle} 파일`,
+            );
+          } else if (uploadedResources.length > 1) {
+            window.electron.encodingComplete(
+              `${uploadedResources[0].fileTitle} 등 ${uploadedResources.length}개 파일`,
+            );
+          }
         } else {
           console.log('청크 업로드 미완료');
         }
@@ -701,12 +707,14 @@ function UploadComponent() {
   };
 
   return (
-    <div>
+    <div className="mr-10">
+      <br />
       <h2>파일 업로드</h2>
+      <br />
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer"
+        className="p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer min-h-64"
         onClick={handleAreaClick}
       >
         {files.length === 0 && (
@@ -742,7 +750,7 @@ function UploadComponent() {
           className="hidden"
         />
       </div>
-
+      <br />
       <button
         className="mt-4 p-2 bg-blue-500 text-white rounded"
         onClick={handleUpload}
