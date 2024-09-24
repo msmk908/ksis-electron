@@ -14,7 +14,6 @@ import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-// import getLocalIP from '../renderer/getLocalIP';
 import 'dotenv/config';
 
 const platform = os.platform(); // 현재 플랫폼
@@ -192,7 +191,6 @@ ipcMain.handle('get-file', async (event, filePath) => {
     throw error;
   }
 });
-// ipcMain.handle('get-ip-address', () => getLocalIP());
 ipcMain.handle('get-mac-address', () => {
   const networkInterfaces = os.networkInterfaces();
   const macAddresses: string[] = [];
