@@ -23,3 +23,6 @@ export const TOKEN_CALLBACK = '/get-token';
 
 // SSE
 export const EVENT = '/events';
+
+// fileSize
+export const FILE_SIZE = '/api/filesize';

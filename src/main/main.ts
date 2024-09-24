@@ -25,7 +25,6 @@ const getIconPath = () => {
     ? path.join(process.resourcesPath, 'assets', 'icon.png')
     : path.join(__dirname, '../../assets/icon.png');
 
-  console.log('Icon Path: ', iconPath); // 경로를 콘솔에 출력
   return iconPath;
 };
 
@@ -131,6 +130,8 @@ const createWindow = async () => {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
     },
     autoHideMenuBar: true,
   });
@@ -246,42 +247,63 @@ ipcMain.handle('encoding-complete', (event, fileTitle) => {
  * Add event listeners...
  */
 
-app.on('second-instance', (event, commandLine, workingDirectory) => {
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
+// 일렉트론 앱의 단일 인스턴스 잠금 설정
+const gotTheLock = app.requestSingleInstanceLock();
 
-    const url = commandLine.find((cmd) => cmd.startsWith('ksis://'));
-    if (url) {
-      mainWindow.webContents.send('open-url', url);
+if (!gotTheLock) {
+  app.quit(); // 이미 실행 중인 인스턴스가 있을 경우 새 인스턴스 종료
+} else {
+  // 앱을 두 번 실행하려 할 때 처리
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore(); // 최소화된 경우 복원
+      mainWindow.focus(); // 창에 포커스
+
+      if (!mainWindow.isVisible()) {
+        mainWindow.show();
+        mainWindow.focus();
+      }
+
+      const url = commandLine.find((cmd) => cmd.startsWith('ksis://'));
+      if (url) {
+        mainWindow.webContents.send('open-url', url); // URL을 렌더러 프로세스로 전달
+      }
     }
-  }
-});
+  });
 
-app.on('open-url', (event, url) => {
-  if (mainWindow) {
-    mainWindow.webContents.send('open-url', url);
-  } else {
-    app.once('ready', () => {
-      createWindow();
-      createTray(); // 트레이 생성
+  app.whenReady().then(() => {
+    createWindow();
+    createTray();
+
+    app.on('activate', () => {
+      if (mainWindow === null) {
+        createWindow();
+      }
+    });
+  });
+
+  app.on('open-url', (event, url) => {
+    event.preventDefault(); // 기본 동작 방지
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore(); // 최소화된 경우 복원
+        mainWindow.focus();
+      }
+
+      mainWindow.webContents.send('open-url', url); // URL을 렌더러 프로세스로 전달
+    } else {
+      // 창이 없을 때만 새로 생성
       app.whenReady().then(() => {
-        if (mainWindow === null) {
-          createWindow();
-          createTray(); // 트레이 생성 추가
+        createWindow();
+        createTray();
+
+        // 창이 생성되었는지 확인
+        if (mainWindow) {
+          mainWindow.webContents.once('did-finish-load', () => {
+            mainWindow?.webContents.send('open-url', url); // 창이 로드된 후 URL 전달
+          });
         }
       });
-    });
-  }
-});
-
-app
-  .whenReady()
-  .then(() => {
-    createWindow();
-    createTray(); // 트레이 생성
-    app.on('activate', () => {
-      if (mainWindow === null) createWindow();
-    });
-  })
-  .catch(console.log);
+    }
+  });
+}

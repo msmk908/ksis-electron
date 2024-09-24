@@ -68,8 +68,8 @@ console.log('apiBaseUrl : ', apiBaseUrl);
 console.log('webBaseUrl : ', webBaseUrl);
 
 contextBridge.exposeInMainWorld('env', {
-  API_BASE_URL: apiBaseUrl,
-  WEB_BASE_URL: webBaseUrl,
+  API_BASE_URL: apiBaseUrl || 'http://localhost:8080',
+  WEB_BASE_URL: webBaseUrl || 'http://localhost:3000',
 });
 
 export type ElectronHandler = typeof electronHandler;
