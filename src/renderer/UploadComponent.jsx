@@ -28,6 +28,18 @@ function UploadComponent() {
   // 로컬스토리지에서 accountId 가져오기
   const accountId = localStorage.getItem('accountId');
 
+  // 확장자 화이트리스트
+  const allowedExtensions = [
+    'jpg',
+    'jpeg',
+    'png',
+    'bmp',
+    'mp4',
+    'mov',
+    'avi',
+    'mkv',
+  ];
+
   // 파일 크기 제한을 가져오는 함수
   useEffect(() => {
     const fileSizeLimit = async () => {
@@ -41,10 +53,31 @@ function UploadComponent() {
     fileSizeLimit();
   }, []);
 
+  // 확장자 화이트리스트 검증
+  const isExtensionAllowed = (fileName) => {
+    const fileExtension = fileName.split('.').pop().toLowerCase();
+    return allowedExtensions.includes(fileExtension);
+  };
+
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
 
+    // 파일 화이트리스트 검증
+    const invalidFiles = newFiles.filter(
+      (file) => !isExtensionAllowed(file.name),
+    );
+
+    if (invalidFiles.length > 0) {
+      const invalidFileNames = invalidFiles.map((file) => file.name).join(', ');
+      window.alert(
+        '허용되지 않은 파일 형식이 있습니다. 허용되지 않는 파일: ' +
+          invalidFileNames,
+      );
+      return;
+    }
+
+    // 파일 용량 검증
     const exceededFiles = newFiles.filter((file) => {
       if (
         file.type.startsWith('image/') &&
@@ -108,6 +141,21 @@ function UploadComponent() {
 
     const newFiles = Array.from(e.dataTransfer.files);
 
+    // 파일 화이트리스트 검증
+    const invalidFiles = newFiles.filter(
+      (file) => !isExtensionAllowed(file.name),
+    );
+
+    if (invalidFiles.length > 0) {
+      const invalidFileNames = invalidFiles.map((file) => file.name).join(', ');
+      window.alert(
+        '허용되지 않은 파일 형식이 있습니다. 허용되지 않는 파일: ' +
+          invalidFileNames,
+      );
+      return;
+    }
+
+    // 파일 용량 검증
     const exceededFiles = newFiles.filter((file) => {
       if (
         file.type.startsWith('image/') &&
@@ -470,7 +518,7 @@ function UploadComponent() {
 
           // 파일 업로드 되었을 때 토스트 알림
           // 메인 프로세스에 알림 전송
-          window.electron.uploadComplete(fileTitle);
+          // window.electron.uploadComplete(fileTitle);
 
           // 파일 타입에 따른 resourceType 설정
           let resourceType = '';
@@ -637,6 +685,11 @@ function UploadComponent() {
             uploadedEncodings,
             uploadedTitles,
             accountId,
+          );
+
+          // 인코딩 그룹 토스트 알림
+          window.electron.encodingComplete(
+            `${uploadedResources[0].fileTitle} 등 ${uploadedResources.length}개 파일`,
           );
         } else {
           console.log('청크 업로드 미완료');
