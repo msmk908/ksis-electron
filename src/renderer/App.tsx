@@ -106,9 +106,12 @@ const RouteHandler = () => {
         <Routes>
           <Route path={MAC} element={<Mac />} />
           <Route path={LOGIN} element={<Login />} />
-          <Route element={<ProtectedRoute/>}>
-          <Route path={UPLOAD} element={<UploadComponent />} />
-          <Route path={UPLOAD_PROGRESS} element={<UploadProgressComponent />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path={UPLOAD} element={<UploadComponent />} />
+            <Route
+              path={UPLOAD_PROGRESS}
+              element={<UploadProgressComponent />}
+            />
           </Route>
         </Routes>
       </div>
