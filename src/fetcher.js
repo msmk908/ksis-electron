@@ -3,6 +3,7 @@ import { TOKEN_CALLBACK } from './constants/api_constant';
 
 // const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
 const API_BASE_URL = window.env.API_BASE_URL;
+console.log('Renderer API_BASE_URL', API_BASE_URL);
 
 const fetcher = axios.create({
   baseURL: API_BASE_URL,
@@ -29,6 +30,8 @@ fetcher.interceptors.response.use(
       console.log('에러났습니다. 왜냐하면 액세스 토큰이 만료됐거든요.');
 
       const { data } = error.response;
+      console.log('received data :', data);
+
       const accessToken = localStorage.getItem('accessToken'); // 만료된 액세스 토큰 담기
       console.log('accessToken : ', accessToken);
       if (accessToken) {

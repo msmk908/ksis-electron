@@ -27,6 +27,40 @@ function UploadProgressComponent() {
   // 로컬스토리지에서 accountId 가져오기
   const accountId = localStorage.getItem('accountId');
 
+  // 컴포넌트 언마운트 시 클린업 추가
+  useEffect(() => {
+    return () => {
+      // 로컬스토리지에서 완료된 업로드를 지우는 함수
+      const cleanCompletedUploads = () => {
+        Object.keys(localStorage).forEach((key) => {
+          if (
+            key.startsWith('uploadProgress_') &&
+            key.endsWith(`_${accountId}`)
+          ) {
+            const progressData = JSON.parse(localStorage.getItem(key));
+            const fileName = key.split('_').slice(1, -1).join('_');
+            const chunkProgressKey = `chunkProgress_${fileName}_${accountId}`;
+            const chunkProgress = JSON.parse(
+              localStorage.getItem(chunkProgressKey),
+            );
+
+            if (progressData && progressData.progress === 100) {
+              // 인코딩 요청 상태 확인
+              if (chunkProgress && chunkProgress.encodingRequested) {
+                // 인코딩 요청이 보내졌으면 청크 프로그레스와 업로드 프로그레스 모두 삭제
+                localStorage.removeItem(key); // 업로드 진행 상태 삭제
+                localStorage.removeItem(chunkProgressKey); // 청크 진행 상태 삭제
+                console.log(`No encoding request for ${fileName}, deleting.`);
+              }
+            }
+          }
+        });
+      };
+
+      cleanCompletedUploads(); // 컴포넌트 언마운트 시 실행
+    };
+  }, [accountId]);
+
   // 컴포넌트가 마운트될 때 로컬스토리지에서 업로드 퍼센트 읽어오는 코드
   useEffect(() => {
     const updateProgress = () => {
@@ -34,8 +68,10 @@ function UploadProgressComponent() {
 
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
-        if (key.startsWith('uploadProgress_')) {
-          const fileName = key.replace('uploadProgress_', '');
+        if (key.startsWith('uploadProgress_') && key.endsWith(`${accountId}`)) {
+          const fileName = key
+            .replace('uploadProgress_', '')
+            .replace(`_${accountId}`, '');
           const storeData = JSON.parse(localStorage.getItem(key));
 
           if (storeData) {
@@ -51,7 +87,9 @@ function UploadProgressComponent() {
 
     updateProgress();
     const interval = setInterval(updateProgress, 100);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
 
   // 컴포넌트가 마운트될 때 로컬스토리지에서 일시정지 상태를 읽어오는 코드
@@ -62,7 +100,9 @@ function UploadProgressComponent() {
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key.endsWith('_paused') && localStorage.getItem(key) === 'true') {
-          const fileName = key.replace('_paused', '');
+          const fileName = key
+            .replace('_paused', '')
+            .replace(`_${accountId}`, '');
           updatedPausedFiles.add(fileName);
         }
       }
@@ -98,7 +138,8 @@ function UploadProgressComponent() {
     let chunkIndex = chunkindex || 0;
 
     while (chunkIndex < totalChunks) {
-      const isPaused = localStorage.getItem(`${fileTitle}_paused`) === 'true';
+      const isPaused =
+        localStorage.getItem(`${fileTitle}_${accountId}_paused`) === 'true';
       if (isPaused) {
         // 로컬스토리지에 paused 가 true 일 때 정지
         return;
@@ -130,20 +171,23 @@ function UploadProgressComponent() {
 
             // 로컬스토리지에 업로드 진행퍼센트 업데이트
             const existingData =
-              JSON.parse(localStorage.getItem(`uploadProgress_${fileTitle}`)) ||
-              {};
+              JSON.parse(
+                localStorage.getItem(
+                  `uploadProgress_${fileTitle}_${accountId}`,
+                ),
+              ) || {};
             localStorage.setItem(
-              `uploadProgress_${fileTitle}`,
+              `uploadProgress_${fileTitle}_${accountId}`,
               JSON.stringify({ ...existingData, progress: percentCompleted }),
             );
 
             // 로클스토리지에 어느 청크까지 업로드되었는지 업데이트
             const chunkProgress = JSON.parse(
-              localStorage.getItem(`chunkProgress_${fileTitle}`),
+              localStorage.getItem(`chunkProgress_${fileTitle}_${accountId}`),
             );
             chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
             localStorage.setItem(
-              `chunkProgress_${fileTitle}`,
+              `chunkProgress_${fileTitle}_${accountId}`,
               JSON.stringify(chunkProgress),
             );
           },
@@ -158,11 +202,12 @@ function UploadProgressComponent() {
         // 청크 업로드가 완료된 경우, 상태를 업데이트
         if (chunkIndex >= totalChunks) {
           const existingData =
-            JSON.parse(localStorage.getItem(`chunkProgress_${fileTitle}`)) ||
-            {};
+            JSON.parse(
+              localStorage.getItem(`chunkProgress_${fileTitle}_${accountId}`),
+            ) || {};
           existingData.uploadCompleted = true;
           localStorage.setItem(
-            `chunkProgress_${fileTitle}`,
+            `chunkProgress_${fileTitle}_${accountId}`,
             JSON.stringify(existingData),
           );
 
@@ -229,6 +274,15 @@ function UploadProgressComponent() {
       },
     };
 
+    // 인코딩 요청을 전송하기 전 로컬스토리지에 상태 저장
+    const fileTitle = title || file.name.split('.').slice(0, -1).join('.');
+    const chunkProgressKey = `chunkProgress_${fileTitle}_${accountId}`;
+    const chunkProgress =
+      JSON.parse(localStorage.getItem(chunkProgressKey)) || {};
+
+    chunkProgress.encodingRequested = true; // 인코딩 요청 상태를 true로 설정
+    localStorage.setItem(chunkProgressKey, JSON.stringify(chunkProgress));
+
     return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',
@@ -262,16 +316,16 @@ function UploadProgressComponent() {
   // 일시정지 기능
   const pauseUpload = (fileName) => {
     // 일시정지 상태를 로컬스토리지에 저장
-    localStorage.setItem(`${fileName}_paused`, 'true');
+    localStorage.setItem(`${fileName}_${accountId}_paused`, 'true');
   };
 
   // 재개 기능
   const resumeUpload = async (fileName) => {
     // 일시정지 상태를 로컬스토리지에서 제거
-    localStorage.removeItem(`${fileName}_paused`);
+    localStorage.removeItem(`${fileName}_${accountId}_paused`);
 
     const chunkProgress = JSON.parse(
-      localStorage.getItem(`chunkProgress_${fileName}`),
+      localStorage.getItem(`chunkProgress_${fileName}_${accountId}`),
     );
 
     const chunkindex = chunkProgress.chunkIndex;
@@ -302,7 +356,7 @@ function UploadProgressComponent() {
         // 모든 파일의 청크 업로드가 완료된 후 인코딩 요청
         const isFileUploaded = (fileTitle) => {
           const progress = JSON.parse(
-            localStorage.getItem(`chunkProgress_${fileTitle}`),
+            localStorage.getItem(`chunkProgress_${fileTitle}_${accountId}`),
           );
           return progress && progress.uploadCompleted;
         };
@@ -310,7 +364,9 @@ function UploadProgressComponent() {
         if (isFileUploaded(savedResource.fileTitle)) {
           console.log('savedResource.fileTitle' + savedResource.fileTitle);
           const encodings = JSON.parse(
-            localStorage.getItem(`chunkProgress_${savedResource.fileTitle}`),
+            localStorage.getItem(
+              `chunkProgress_${savedResource.fileTitle}_${accountId}`,
+            ),
           ).encodings;
 
           // 인코딩 요청
@@ -337,8 +393,8 @@ function UploadProgressComponent() {
 
   // 삭제 버튼 클릭
   const handleDelete = (fileName) => {
-    localStorage.removeItem(`uploadProgress_${fileName}`);
-    localStorage.removeItem(`chunkProgress_${fileName}`);
+    localStorage.removeItem(`uploadProgress_${fileName}_${accountId}`);
+    localStorage.removeItem(`chunkProgress_${fileName}_${accountId}`);
     setProgress((prevProgress) => {
       const newProgress = { ...prevProgress };
       delete newProgress[fileName];

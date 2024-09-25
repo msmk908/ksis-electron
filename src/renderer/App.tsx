@@ -83,9 +83,11 @@ const RouteHandler = () => {
             localStorage.removeItem('currentRoute');
 
             navigate(LOGIN);
+            console.log('로그아웃');
           } else {
             const savedRoute = localStorage.getItem('currentRoute');
             navigate(savedRoute as string);
+            console.log('로그인 유지');
           }
         })
         .catch(() => {

@@ -15,18 +15,23 @@ const Login = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+
+    console.log('Sending credentials:', credentials); // 확인용 로그 추가
+
     try {
       const response = await fetcher.post(LOGIN, credentials);
       const data = response.data;
+      console.log('Received JSON data:', data);
 
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('accountId', accountId);
-        // alert('Login successful');
+        alert('Login successful');
         navigate(UPLOAD);
 
         const url = `${WEB_BASE_URL}/get-token?accessToken=${encodeURIComponent(data.accessToken)}`;
         window.electron.ipcRenderer.invoke('open-url', url);
+        console.log(url);
         try {
           await fetcher.post(ACCESS_LOG, {
             accountId: accountId,
@@ -40,7 +45,7 @@ const Login = () => {
         setError('아이디 또는 비밀번호가 일치하지 않습니다');
       }
     } catch (error) {
-      // alert('An error occurred: ' + error.message);
+      alert('An error occurred: ' + error.message);
     }
   };
 
