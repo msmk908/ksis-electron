@@ -8,21 +8,14 @@ import { LOGIN } from '../constants/page_constant';
 
 const Mac = () => {
   const [macAddress, setMacAddress] = useState(null);
-  // const [ipAddress, setIpAddress] = useState(null);
   const navigate = useNavigate(); // 페이지 이동을 위한 useNavigate 훅
 
   const handleLogin = async () => {
     let mac;
-    //let ip;
     try {
       // 로그인 버튼을 눌렀을 때 MAC 주소 가져오기
       mac = await window.electron.getMacAddress();
       setMacAddress(mac);
-
-      // ip = await window.electron.getIpAddress();
-      // setIpAddress(ip);
-
-      // console.log(`MAC 주소: ${mac}, IP 주소: ${ip}`);
 
       if (!mac) {
         alert('MAC 주소를 가져올 수 없습니다.');

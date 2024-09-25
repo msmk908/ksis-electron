@@ -6,7 +6,7 @@ function ProtectedRoute() {
 
     useEffect(() => {
         if (!accessToken) {
-            alert("로그인하시오.");
+            alert("올바르지 않은 접근입니다.");
         }
     }, [accessToken]);
 

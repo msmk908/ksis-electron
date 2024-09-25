@@ -5,7 +5,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
-import { UPLOAD, UPLOAD_PROGRESS } from '../constants/page_constant';
+import { UPLOAD, UPLOAD_PROGRESS, LOGIN  } from '../constants/page_constant';
 
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
 const SSE_URL = `${API_BASE_URL}${EVENT}`;
@@ -28,13 +28,12 @@ const Sidebar: React.FC = () => {
       const currentAccountId = accountId;
 
       if (loggedOutAccountId === currentAccountId) {
-        alert("로그아웃 되었습니다.");
         // 로컬 스토리지에서 액세스 토큰 제거
         localStorage.removeItem("accessToken");
         localStorage.removeItem("authority");
         localStorage.removeItem("accountId");
         // 로그인 페이지로 리디렉션
-        window.location.href = "/login";
+        navigate(LOGIN);
         console.log("로그아웃 이벤트 수신:", event.data);
         // SSE 연결 종료
         eventSource.close(); // 로그아웃 후 SSE 연결 종료
@@ -73,7 +72,7 @@ const Sidebar: React.FC = () => {
         </li>
         <li>
           <NavLink
-            to="/"
+            to={"/"}
             onClick={async () => {
               const accountId = localStorage.getItem('accountId');
               try {
@@ -86,7 +85,6 @@ const Sidebar: React.FC = () => {
                 });
                 // 로그아웃 성공 시 로컬스토리지 토큰 제거
                 localStorage.removeItem('accessToken');
-                // localStorage.removeItem('refreshToken');
                 localStorage.removeItem('accountId');
                 localStorage.removeItem('currentRoute');
               } catch (error) {

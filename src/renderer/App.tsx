@@ -77,13 +77,12 @@ const RouteHandler = () => {
         .then((response) => {
           if (response.data.logout) {
             // 로그아웃 처리
-            alert('로그아웃되었습니다.');
             localStorage.removeItem('accessToken');
             localStorage.removeItem('authority');
             localStorage.removeItem('accountId');
             localStorage.removeItem('currentRoute');
 
-            window.location.href = '/login';
+            navigate(LOGIN);
             console.log('로그아웃');
           } else {
             const savedRoute = localStorage.getItem('currentRoute');
