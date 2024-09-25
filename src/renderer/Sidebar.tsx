@@ -18,7 +18,6 @@ const Sidebar: React.FC = () => {
   useEffect(() => {
     let eventSource = new EventSource(SSE_URL);
     const accountId = localStorage.getItem('accountId');
-    console.log('User ID:', accountId);
     if (accountId) {
       setAccountId(accountId);
     }
@@ -34,7 +33,6 @@ const Sidebar: React.FC = () => {
         localStorage.removeItem("accountId");
         // 로그인 페이지로 리디렉션
         navigate(LOGIN);
-        console.log("로그아웃 이벤트 수신:", event.data);
         // SSE 연결 종료
         eventSource.close(); // 로그아웃 후 SSE 연결 종료
       }
