@@ -567,6 +567,18 @@ function UploadComponent() {
       return acc;
     }, {});
 
+    // 로컬스토리지에 인코딩 요청 전송 상태 저장
+    savedResources.forEach((resource, index) => {
+      const fileTitle =
+        titles[index] || files[index].name.split('.').slice(0, -1).join('.');
+      const chunkProgressKey = `chunkProgress_${fileTitle}_${accountId}`;
+      const chunkProgress =
+        JSON.parse(localStorage.getItem(chunkProgressKey)) || {};
+
+      chunkProgress.encodingRequested = true; // 인코딩 요청 상태를 true로 설정
+      localStorage.setItem(chunkProgressKey, JSON.stringify(chunkProgress));
+    });
+
     return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',
