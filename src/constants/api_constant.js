@@ -19,10 +19,13 @@ export const MAC = '/mac';
 
 // token
 export const CHECK_TOKEN = '/check-access-token';
-export const TOKEN_CALLBACK = '/get-token'; 
+export const TOKEN_CALLBACK = '/get-token';
 
 // SSE
 export const EVENT = '/events';
 
 // fileSize
 export const FILE_SIZE = '/api/filesize';
+
+// resolutions
+export const RESOLUTION = '/resolution';
