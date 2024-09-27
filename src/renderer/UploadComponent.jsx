@@ -657,12 +657,15 @@ function UploadComponent() {
         });
 
         // 청크 업로드 진행
-        for (let i = 0; i < savedResources.length; i++) {
-          const file = files[i];
-          const fileTitle =
-            titles[i] || file.name.split('.').slice(0, -1).join('.');
-          await uploadChunks(file, savedResources[i], fileTitle);
-        }
+        // **병렬로 청크 업로드 진행**
+        await Promise.all(
+          savedResources.map((resource, index) => {
+            const file = files[index];
+            const fileTitle =
+              titles[index] || file.name.split('.').slice(0, -1).join('.');
+            return uploadChunks(file, resource, fileTitle); // 청크 업로드 비동기 처리
+          }),
+        );
 
         // 정상적으로 업로드 완료된 파일들만 필터링
         const uploadedResources = savedResources.filter((resource) => {
@@ -676,6 +679,7 @@ function UploadComponent() {
 
         // 인코딩 요청 (업로드가 완료된 파일들만 인코딩 요청)
         if (uploadedResources.length > 0) {
+          console.log(uploadedResources);
           const uploadedFiles = uploadedResources.map((resource) => {
             const fileTitle = resource.fileTitle;
             return files.find(
