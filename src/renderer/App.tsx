@@ -29,7 +29,7 @@ import ProtectedRoute from './ProtectedRoute';
 function App() {
   return (
     <Router>
-      <EncodingComplete />
+      {/* <EncodingComplete /> */}
       <RouteHandler />
     </Router>
   );

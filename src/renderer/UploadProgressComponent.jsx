@@ -283,6 +283,8 @@ function UploadProgressComponent() {
     chunkProgress.encodingRequested = true; // 인코딩 요청 상태를 true로 설정
     localStorage.setItem(chunkProgressKey, JSON.stringify(chunkProgress));
 
+    console.log(encodingsWithFileNames);
+
     return fetcher.post(ENCODING + `/${accountId}`, encodingsWithFileNames, {
       headers: {
         'Content-Type': 'application/json',

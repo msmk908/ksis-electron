@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import fetcher from '../fetcher';
+import { RESOLUTION } from '../constants/api_constant';
 
 // 상위로 파일첨부 이벤트 전파를 막음
 const handleClick = (e) => {
@@ -21,6 +23,27 @@ const FileItem = ({
 }) => {
   const isImage = file.type.startsWith('image/');
   const isVideo = file.type.startsWith('video/');
+  const [resolutions, setResolutions] = useState([]);
+
+  useEffect(() => {
+    const fetchResolutions = async () => {
+      try {
+        const response = await fetcher.get(RESOLUTION);
+        setResolutions(response.data);
+        // 초기값 설정: 첫 번째 해상도를 기본값으로 설정
+        if (response.data.length > 0) {
+          const initialResolution = `${response.data[0].width}x${response.data[0].height}`;
+          handleResolutionChange(fileIndex, 0, {
+            target: { value: initialResolution },
+          });
+        }
+      } catch (error) {
+        console.error('Failed to fetch resolutions:', error);
+      }
+    };
+
+    fetchResolutions();
+  }, []);
 
   return (
     <div
@@ -96,9 +119,14 @@ const FileItem = ({
                   handleResolutionChange(fileIndex, encodingIndex, e)
                 }
               >
-                <option value="720p">720p</option>
-                <option value="1080p">1080p</option>
-                <option value="4k">4K</option>
+                {resolutions.map((res) => (
+                  <option
+                    key={res.resolutionId}
+                    value={`${res.width}x${res.height}`}
+                  >
+                    {`${res.width}x${res.height}`}
+                  </option>
+                ))}
               </select>
             </div>
 
