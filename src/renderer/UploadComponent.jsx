@@ -835,7 +835,7 @@ function UploadComponent() {
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer min-h-64"
+        className="w-full p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer min-h-64"
         onClick={handleAreaClick}
       >
         {files.length === 0 && (

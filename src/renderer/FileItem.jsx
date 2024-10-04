@@ -45,6 +45,14 @@ const FileItem = ({
     fetchResolutions();
   }, []);
 
+  // 파일 이름을 제한된 길이로 줄이는 함수
+  const truncateFileName = (name, maxLength) => {
+    if (name.length > maxLength) {
+      return name.slice(0, maxLength) + '...';
+    }
+    return name;
+  };
+
   return (
     <div
       className="relative border p-4 mt-4 mb-4 rounded-md shadow-sm flex"
@@ -75,7 +83,12 @@ const FileItem = ({
       </div>
 
       <div className="w-1/2 pr-4">
-        <label className="block mb-2 font-bold">{file.name}</label>
+        <label
+          className="block mb-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap"
+          title={file.name} // 마우스를 올리면 전체 파일 이름 표시
+        >
+          {truncateFileName(file.name, 25)} {/* 20자로 파일 이름을 제한 */}
+        </label>
         <input
           type="text"
           placeholder="제목을 입력해주세요."
