@@ -5,11 +5,11 @@ import videoIcon from '../../assets/icons/video-file.png';
 import axios from 'axios';
 import fetcher from '../fetcher';
 import {
-  FILEDATA_SAVE,
   UPLOAD_CHUNK,
   ENCODING,
   UPLOAD_NOTIFICATION,
   UPLOAD_LOG,
+  DELETE_FILE,
 } from '../constants/api_constant';
 
 function UploadProgressComponent() {
@@ -393,15 +393,32 @@ function UploadProgressComponent() {
     }
   };
 
+  // 파일 삭제 함수
+  const deleteFileFromServer = async (fileName) => {
+    try {
+      const response = await fetcher.post(DELETE_FILE, { fileName, accountId });
+
+      if (response.status !== 200) {
+        throw new Error('파일 삭제 실패');
+      }
+      console.log(`${fileName} 삭제 완료`);
+    } catch (error) {
+      console.error('파일 삭제 중 오류 발생: ', error);
+    }
+  };
+
   // 삭제 버튼 클릭
   const handleDelete = (fileName) => {
     localStorage.removeItem(`uploadProgress_${fileName}_${accountId}`);
     localStorage.removeItem(`chunkProgress_${fileName}_${accountId}`);
+    localStorage.removeItem(`${fileName}_${accountId}_paused`);
     setProgress((prevProgress) => {
       const newProgress = { ...prevProgress };
       delete newProgress[fileName];
       return newProgress;
     });
+
+    deleteFileFromServer(fileName);
   };
 
   // 일시정지 및 재개 버튼 클릭
@@ -457,18 +474,28 @@ function UploadProgressComponent() {
                 ></div>
               </div>
               {progress < 100 && (
-                <div className="w-1/12 text-right pl-2">
+                <div className="w-2/12 text-right pl-2">
                   <button
                     onClick={() => handlePauseResume(fileName)}
                     className={`${
                       pausedFilesState.has(fileName)
                         ? 'bg-yellow-500 hover:bg-yellow-700'
                         : 'bg-blue-500 hover:bg-blue-700'
-                    } text-white font-bold px-2 py-1 rounded-full transition duration-300 ease-in-out`}
+                    } text-white font-bold px-2 py-1 rounded-full ease-in-out`}
                     title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
                   >
                     {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
                   </button>
+                  {pausedFilesState.has(fileName) ? (
+                    <button
+                      onClick={() => handleDelete(fileName)}
+                      className="bg-red-500 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-full ease-in-out ml-2"
+                    >
+                      X
+                    </button>
+                  ) : (
+                    <hr></hr>
+                  )}
                 </div>
               )}
             </div>
