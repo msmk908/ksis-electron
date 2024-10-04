@@ -12,6 +12,8 @@ import {
   UPLOAD_LOG,
   FILE_SIZE,
   RESOLUTION,
+  SAME_TITLE,
+  DELETE_FILE,
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
 
@@ -22,6 +24,7 @@ function UploadComponent() {
   const [encodings, setEncodings] = useState({}); // 파일 인코딩 설정 저장
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const [fileSizeLimit, setFileSizeLimit] = useState({}); // 파일 크기 제한 저장
+  const [titlesVerified, setTitlesVerified] = useState(false);
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
@@ -121,6 +124,18 @@ function UploadComponent() {
         ...newEncodings,
       }));
 
+      // 파일 이름을 기본 제목으로 titles에 추가
+      const newTitles = newFiles.reduce((acc, file, index) => {
+        const fileIndex = prevFiles.length + index;
+        acc[fileIndex] = file.name.split('.').slice(0, -1).join('.');
+        return acc;
+      }, {});
+
+      setTitles((prevTitles) => ({
+        ...prevTitles,
+        ...newTitles,
+      }));
+
       return updatedFiles;
     });
 
@@ -197,6 +212,18 @@ function UploadComponent() {
       setEncodings((prevEncodings) => ({
         ...prevEncodings,
         ...newEncodings,
+      }));
+
+      // 파일 이름을 기본 제목으로 titles에 추가
+      const newTitles = newFiles.reduce((acc, file, index) => {
+        const fileIndex = prevFiles.length + index;
+        acc[fileIndex] = file.name.split('.').slice(0, -1).join('.');
+        return acc;
+      }, {});
+
+      setTitles((prevTitles) => ({
+        ...prevTitles,
+        ...newTitles,
       }));
 
       return updatedFiles;
@@ -610,6 +637,53 @@ function UploadComponent() {
     }
   };
 
+  // 서버에서 제목 중복을 확인하고 새로운 제목을 반환하는 함수
+  const checkTitleWithServer = async (title) => {
+    try {
+      const response = await fetcher.post(
+        SAME_TITLE,
+        { title },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        },
+      );
+
+      if (response.status === 200) {
+        console.log('중복 반환받은 값: ' + response.data);
+        return response.data;
+      }
+    } catch (error) {
+      console.error('제목 중복 체크 오류: ', error);
+      return title;
+    }
+  };
+
+  // 파일 제목이 겹치는지 검증하고, 필요한 경우 수정하는 함수
+  const titleVerification = async () => {
+    const updatedTitles = { ...titles };
+
+    // 각 파일 제목을 순차적으로 서버에 검증 요청
+    await Promise.all(
+      Object.keys(titles).map(async (key) => {
+        const originalTitle = titles[key];
+        const newTitle = await checkTitleWithServer(originalTitle);
+        updatedTitles[key] = newTitle;
+      }),
+    );
+
+    setTitles(updatedTitles);
+    setTitlesVerified(true);
+  };
+
+  // 제목 검증 완료 후 처리
+  useEffect(() => {
+    if (titlesVerified) {
+      handleUpload();
+    }
+  }, [titlesVerified]);
+
   // 업로드 버튼 함수
   const handleUpload = async () => {
     if (files.length == 0) {
@@ -800,7 +874,7 @@ function UploadComponent() {
       <br />
       <button
         className="mt-4 p-2 bg-blue-500 text-white rounded"
-        onClick={handleUpload}
+        onClick={titleVerification}
       >
         Upload
       </button>
