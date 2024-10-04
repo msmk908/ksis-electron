@@ -11,6 +11,7 @@ import {
   UPLOAD_NOTIFICATION,
   UPLOAD_LOG,
   FILE_SIZE,
+  RESOLUTION,
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
 
@@ -111,9 +112,7 @@ function UploadComponent() {
       const newEncodings = newFiles.reduce((acc, file, index) => {
         const fileIndex = prevFiles.length + index;
         const isImage = file.type.startsWith('image/');
-        acc[fileIndex] = [
-          { format: isImage ? 'jpg' : 'mp4', resolution: '1080p' },
-        ];
+        acc[fileIndex] = [{ format: isImage ? 'jpg' : 'mp4' }];
         return acc;
       }, {});
 
@@ -277,11 +276,17 @@ function UploadComponent() {
   };
 
   // 포맷 해상도 추가
-  const addEncoding = (fileIndex) => {
+  const addEncoding = async (fileIndex) => {
     const newEncodings = { ...encodings };
+
+    // 가져온 해상도 목록 중 첫 번재 값을 기본값으로 설정
+    const response = await fetcher.get(RESOLUTION);
     newEncodings[fileIndex] = [
       ...newEncodings[fileIndex],
-      { format: encodings[fileIndex][0].format, resolution: '1080p' }, // 동일한 포맷으로 추가
+      {
+        format: encodings[fileIndex][0].format,
+        resolution: `${response.data[0].width}x${response.data[0].height}`,
+      }, // 동일한 포맷으로 추가
     ];
     setEncodings(newEncodings);
   };
@@ -607,6 +612,25 @@ function UploadComponent() {
 
   // 업로드 버튼 함수
   const handleUpload = async () => {
+    if (files.length == 0) {
+      window.alert('파일이 없습니다.');
+      return;
+    }
+
+    // 해상도가 설정되지 않은 파일을 찾음
+    const invalidEncodings = files.filter((file, index) => {
+      const fileEncodings = encodings[index];
+      // 인코딩 정보가 없거나, 인코딩 배열 내에 해상도가 없는 경우를 체크
+      return (
+        !fileEncodings || fileEncodings.some((encoding) => !encoding.resolution)
+      );
+    });
+
+    if (invalidEncodings.length > 0) {
+      window.alert('해상도를 설정해주세요.');
+      return; // 업로드 중단
+    }
+
     window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
     navigate(UPLOAD_PROGRESS, {
       state: {
