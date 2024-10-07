@@ -423,8 +423,9 @@ function UploadComponent() {
         // 원본 파일의 확장자 추출 (확장자에서 . 제거)
         const format = file.name.split('.').pop().toLowerCase();
         // 파일 제목 설정 (제목이 없는 경우 파일 이름을 사용)
-        const fileTitle =
-          titles[index] || file.name.split('.').slice(0, -1).join('.');
+        const fileTitle = String(
+          titles[index] || file.name.split('.').slice(0, -1).join('.'),
+        );
         // 해상도 문자열 생성
         const resolution = `${resolutions[index]?.width || ''}x${resolutions[index]?.height || ''}`;
         // 재생시간
@@ -434,7 +435,7 @@ function UploadComponent() {
 
         // 로컬스토리지에 업로드할 파일미리보기, 업로드 진행률 0%로 저장
         localStorage.setItem(
-          `uploadProgress_${fileTitle}_${accountId}`,
+          `uploadProgress_${String(fileTitle)}_${accountId}`,
           JSON.stringify({
             progress: 0,
             previewUrl:
@@ -519,7 +520,7 @@ function UploadComponent() {
                 ),
               ) || {};
             localStorage.setItem(
-              `uploadProgress_${fileTitle}_${accountId}`,
+              `uploadProgress_${String(fileTitle)}_${accountId}`,
               JSON.stringify({ ...existingData, progress: percentCompleted }),
             );
 
@@ -529,7 +530,7 @@ function UploadComponent() {
             );
             chunkProgress.chunkIndex = chunkIndex + 1; // 청크 인덱스를 현재 업로드된 위치로 업데이트
             localStorage.setItem(
-              `chunkProgress_${fileTitle}_${accountId}`,
+              `chunkProgress_${String(fileTitle)}_${accountId}`,
               JSON.stringify(chunkProgress),
             );
           },
@@ -549,7 +550,7 @@ function UploadComponent() {
             ) || {};
           existingData.uploadCompleted = true;
           localStorage.setItem(
-            `chunkProgress_${fileTitle}_${accountId}`,
+            `chunkProgress_${String(fileTitle)}_${accountId}`,
             JSON.stringify(existingData),
           );
 
@@ -642,7 +643,7 @@ function UploadComponent() {
     try {
       const response = await fetcher.post(
         SAME_TITLE,
-        { title },
+        { title: title.toString() },
         {
           headers: {
             'Content-Type': 'application/json',
@@ -663,6 +664,16 @@ function UploadComponent() {
   // 파일 제목이 겹치는지 검증하고, 필요한 경우 수정하는 함수
   const titleVerification = async () => {
     const updatedTitles = { ...titles };
+
+    // 숫자가 15개 이상 연속으로 포함된 제목이 있는지 검사
+    const invalidTitles = Object.values(titles).filter((title) =>
+      /^\d{15,}$/.test(title),
+    );
+
+    if (invalidTitles.length > 0) {
+      window.alert('제목에 숫자가 15개 이상 연속으로 올 수 없습니다.');
+      return; // 업로드 중단
+    }
 
     // 각 파일 제목을 순차적으로 서버에 검증 요청
     await Promise.all(
@@ -744,7 +755,7 @@ function UploadComponent() {
           const encoding = encodings[index];
 
           localStorage.setItem(
-            `chunkProgress_${fileTitle}_${accountId}`,
+            `chunkProgress_${String(fileTitle)}_${accountId}`,
             JSON.stringify({
               chunkIndex: 0,
               filePath: filePath,
@@ -777,7 +788,6 @@ function UploadComponent() {
 
         // 인코딩 요청 (업로드가 완료된 파일들만 인코딩 요청)
         if (uploadedResources.length > 0) {
-          console.log(uploadedResources);
           const uploadedFiles = uploadedResources.map((resource) => {
             const fileTitle = resource.fileTitle;
             return files.find(
@@ -792,8 +802,9 @@ function UploadComponent() {
             const fileIndex = files.findIndex(
               (file, index) =>
                 (titles[index] ||
-                  file.name.split('.').slice(0, -1).join('.')) === fileTitle,
+                  file.name.split('.').slice(0, -1).join('.')) == fileTitle,
             );
+
             return encodings[fileIndex];
           });
 

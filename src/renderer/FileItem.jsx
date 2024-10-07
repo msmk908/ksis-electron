@@ -87,7 +87,7 @@ const FileItem = ({
           className="block mb-2 font-bold overflow-hidden text-ellipsis whitespace-nowrap"
           title={file.name} // 마우스를 올리면 전체 파일 이름 표시
         >
-          {truncateFileName(file.name, 25)} {/* 20자로 파일 이름을 제한 */}
+          {truncateFileName(file.name, 25)} {/* 25자로 파일 이름을 제한 */}
         </label>
         <input
           type="text"
