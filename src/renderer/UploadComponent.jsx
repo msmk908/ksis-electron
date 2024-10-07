@@ -16,6 +16,7 @@ import {
   DELETE_FILE,
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
+import Modal from './ErrorModal'; // 모달 컴포넌트
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -25,9 +26,18 @@ function UploadComponent() {
   const [resolutions, setResolutions] = useState({}); // 원본 해상도 저장
   const [fileSizeLimit, setFileSizeLimit] = useState({}); // 파일 크기 제한 저장
   const [titlesVerified, setTitlesVerified] = useState(false);
+  const [errors, setErrors] = useState({}); // 에러 상태 추가
+  const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태 추가
+  const [modalMessage, setModalMessage] = useState(''); // 모달 메시지 관리
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
+
+  // 모달 보여주는 메서드
+  const showModal = (message) => {
+    setModalMessage(message);
+    setIsModalOpen(true);
+  };
 
   // 로컬스토리지에서 accountId 가져오기
   const accountId = localStorage.getItem('accountId');
@@ -99,7 +109,7 @@ function UploadComponent() {
     });
 
     if (exceededFiles.length > 0) {
-      window.alert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      showModal('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
       return; // 파일 첨부 중단
     }
 
@@ -187,7 +197,7 @@ function UploadComponent() {
     });
 
     if (exceededFiles.length > 0) {
-      window.alert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      showModal('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
       return; // 파일 첨부 중단
     }
 
@@ -574,7 +584,7 @@ function UploadComponent() {
         }
       } catch (error) {
         if (axios.isCancel(error)) {
-          window.alert('업로드 중지');
+          showModal('업로드 중지');
           break;
         } else {
           throw error;
@@ -663,6 +673,14 @@ function UploadComponent() {
 
   // 파일 제목이 겹치는지 검증하고, 필요한 경우 수정하는 함수
   const titleVerification = async () => {
+    // 제목이 입력되지 않은 파일을 찾음
+    const emptyTitleFiles = files.filter((_, index) => !titles[index]);
+
+    if (emptyTitleFiles.length > 0) {
+      showModal('제목을 입력하세요.');
+      return; // 업로드 중단
+    }
+
     const updatedTitles = { ...titles };
 
     // 숫자가 15개 이상 연속으로 포함된 제목이 있는지 검사
@@ -671,7 +689,7 @@ function UploadComponent() {
     );
 
     if (invalidTitles.length > 0) {
-      window.alert('제목에 숫자가 15개 이상 연속으로 올 수 없습니다.');
+      showModal('제목에 숫자가 15개 이상 연속으로 올 수 없습니다.');
       return; // 업로드 중단
     }
 
@@ -698,7 +716,8 @@ function UploadComponent() {
   // 업로드 버튼 함수
   const handleUpload = async () => {
     if (files.length == 0) {
-      window.alert('파일이 없습니다.');
+      showModal('파일이 없습니다.'); // 다시 모달 열기
+      setTitlesVerified(false);
       return;
     }
 
@@ -712,11 +731,12 @@ function UploadComponent() {
     });
 
     if (invalidEncodings.length > 0) {
-      window.alert('해상도를 설정해주세요.');
+      showModal('해상도를 설정해주세요.');
+      setTitlesVerified(false);
       return; // 업로드 중단
     }
 
-    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
+    showModal('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
     navigate(UPLOAD_PROGRESS, {
       state: {
         files,
@@ -840,6 +860,12 @@ function UploadComponent() {
 
   return (
     <div className="mr-10">
+      <Modal
+        isOpen={isModalOpen}
+        title="Error"
+        message={modalMessage}
+        onClose={() => setIsModalOpen(false)}
+      />
       <br />
       <h2>파일 업로드</h2>
       <br />
