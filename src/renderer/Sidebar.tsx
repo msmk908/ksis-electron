@@ -45,6 +45,29 @@ const Sidebar: React.FC = () => {
     });
   }, []); // 빈 배열을 의존성으로 하여 컴포넌트가 처음 마운트될 때만 실행됨
 
+  const handleLogout = async () => {
+    const accountId = localStorage.getItem('accountId');
+    try {
+      // 서버로 로그아웃 요청 전송
+      await fetcher.delete(`${LOGOUT}/${accountId}`);
+
+      await fetcher.post(ACCESS_LOG, {
+        accountId,
+        category: 'LOGOUT',
+      });
+
+      // 로그아웃 성공 시 로컬스토리지 토큰 제거
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('accountId');
+      localStorage.removeItem('currentRoute');
+
+      // 로그인 페이지로 이동
+      navigate(LOGIN);
+    } catch (error) {
+      console.error('로그아웃 실패: ', error);
+    }
+  };
+
   return (
     <div className="w-100 h-screen bg-orange-200 text-black p-4 fixed">
       <img src={ksisLogo} alt="KSIS Logo" className="w-24 mx-auto"></img>
@@ -77,24 +100,7 @@ const Sidebar: React.FC = () => {
         <li>
           <NavLink
             to={"/"}
-            onClick={async () => {
-              const accountId = localStorage.getItem('accountId');
-              try {
-                // 서버로 로그아웃 요청 전송
-                await fetcher.delete(`${LOGOUT}/${accountId}`);
-
-                await fetcher.post(ACCESS_LOG, {
-                  accountId,
-                  category: 'LOGOUT',
-                });
-                // 로그아웃 성공 시 로컬스토리지 토큰 제거
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('accountId');
-                localStorage.removeItem('currentRoute');
-              } catch (error) {
-                console.error('로그아웃 실패: ', error);
-              }
-            }}
+            onClick={handleLogout}
             className={({ isActive }) =>
               `text-center block text-lg p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
