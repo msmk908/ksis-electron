@@ -311,7 +311,7 @@ if (!gotTheLock) {
       type: 'error',
       title: title,
       message: message,
-      buttons: ['확인']
+      buttons: ['확인'],
     });
   });
 }

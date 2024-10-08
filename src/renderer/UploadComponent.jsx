@@ -736,7 +736,7 @@ function UploadComponent() {
       return; // 업로드 중단
     }
 
-    showModal('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
+    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
     navigate(UPLOAD_PROGRESS, {
       state: {
         files,
