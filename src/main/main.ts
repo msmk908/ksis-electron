@@ -125,6 +125,8 @@ const createWindow = async () => {
     show: false,
     width: 1024,
     height: 728,
+    minWidth: 800,
+    minHeight: 600,
     icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
@@ -134,6 +136,7 @@ const createWindow = async () => {
       nodeIntegration: false,
     },
     autoHideMenuBar: true,
+    // frame: false, 
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
