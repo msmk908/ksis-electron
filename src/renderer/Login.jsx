@@ -39,10 +39,7 @@ const Login = () => {
         setError('아이디 또는 비밀번호가 일치하지 않습니다');
       }
     } catch (error) {
-      await window.electron.ipcRenderer.invoke('show-error-dialog', {
-        title: '네트워크 오류',
-        message: '로그인 중 오류가 발생했습니다.'
-      });
+      setError('아이디 또는 비밀번호가 일치하지 않습니다.');
     }
   };
 
