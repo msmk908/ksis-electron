@@ -442,67 +442,73 @@ function UploadProgressComponent() {
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4">업로드 진행 상황</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-700">
+        업로드 진행 상황
+      </h2>
       {Object.entries(progress).map(([fileName, { progress, previewUrl }]) => (
-        <div key={fileName} className="mb-4 flex items-center">
-          <div className="w-1/4 pr-4">
+        <div
+          key={fileName}
+          className="flex items-center justify-between mb-4 bg-white p-4 rounded-lg shadow-md border border-gray-200"
+        >
+          {/* 미리보기 이미지 */}
+          <div className="w-1/6">
             {previewUrl && previewUrl !== 'video-icon' ? (
               <img
                 src={previewUrl}
                 alt={`${fileName} preview`}
-                className="w-full h-auto rounded-lg shadow-md"
+                className="w-full h-auto rounded-md"
               />
             ) : (
               <img
                 src={videoIcon}
                 alt={`${fileName} preview`}
-                className="w-full h-auto rounded-lg shadow-md"
+                className="w-full h-auto rounded-md"
               />
             )}
           </div>
-          <div className="w-3/4">
-            <p className="mb-1 text-lg">{fileName}</p>
-            <div className="flex items-center">
+
+          {/* 파일 정보 및 진행률 */}
+          <div className="w-4/6 pl-4">
+            <p className="text-lg font-semibold text-gray-700 truncate">
+              {fileName}
+            </p>
+            <div className="relative w-full h-4 bg-gray-300 rounded-full mt-2">
               <div
-                className={`${progress === 100 ? 'w-full' : 'w-11/12'} bg-gray-300 rounded-full h-4 relative`}
-              >
-                <div
-                  className={`h-4 rounded-full ${
-                    progress === 100 ? 'bg-green-600' : 'bg-blue-600'
-                  }`}
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-              {progress < 100 && (
-                <div className="w-2/12 text-right pl-2">
-                  <button
-                    onClick={() => handlePauseResume(fileName)}
-                    className={`${
-                      pausedFilesState.has(fileName)
-                        ? 'bg-yellow-500 hover:bg-yellow-700'
-                        : 'bg-blue-500 hover:bg-blue-700'
-                    } text-white font-bold px-2 py-1 rounded-full ease-in-out`}
-                    title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
-                  >
-                    {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
-                  </button>
-                  {pausedFilesState.has(fileName) ? (
-                    <button
-                      onClick={() => handleDelete(fileName)}
-                      className="bg-red-500 hover:bg-red-700 text-white font-bold px-2 py-1 rounded-full ease-in-out ml-2"
-                    >
-                      X
-                    </button>
-                  ) : (
-                    <hr></hr>
-                  )}
-                </div>
-              )}
+                className={`h-4 rounded-full ${
+                  progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                }`}
+                style={{ width: `${progress}%` }}
+              ></div>
             </div>
+            <p className="text-sm text-gray-600 mt-1">{progress}%</p>
+          </div>
+
+          {/* 조작 버튼들 또는 업로드 완료 메시지 */}
+          <div className="w-1/6 flex items-center justify-end space-x-2">
             {progress < 100 ? (
-              <p className="text-right text-sm mt-1">{progress}%</p>
+              <>
+                <button
+                  onClick={() => handlePauseResume(fileName)}
+                  className={`${
+                    pausedFilesState.has(fileName)
+                      ? 'bg-yellow-400 hover:bg-yellow-500'
+                      : 'bg-blue-500 hover:bg-blue-600'
+                  } text-white font-bold px-3 py-1 rounded-md transition-colors duration-300`}
+                  title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
+                >
+                  {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
+                </button>
+                {pausedFilesState.has(fileName) && (
+                  <button
+                    onClick={() => handleDelete(fileName)}
+                    className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-md transition-colors duration-300"
+                  >
+                    X
+                  </button>
+                )}
+              </>
             ) : (
-              <p className="text-right text-sm mt-1">업로드 완료</p>
+              <span className="text-green-500 font-bold">업로드 완료</span>
             )}
           </div>
         </div>
