@@ -60,7 +60,7 @@ const Login = () => {
             id="accountId"
             className="py-2 px-4 border border-orange-400 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value)}
+            onChange={(e) => setAccountId(e.target.value.toLowerCase())}
             required
           />
         </div>
