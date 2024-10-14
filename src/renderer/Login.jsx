@@ -39,7 +39,10 @@ const Login = () => {
         setError('아이디 또는 비밀번호가 일치하지 않습니다');
       }
     } catch (error) {
-      setError('아이디 또는 비밀번호가 일치하지 않습니다.');
+      await window.electron.ipcRenderer.invoke('show-error-dialog', {
+        title: '네트워크 오류',
+        message: '로그인 중 오류가 발생했습니다.'
+      });
     }
   };
 
@@ -60,7 +63,7 @@ const Login = () => {
             id="accountId"
             className="py-2 px-4 border border-orange-400 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
             value={accountId}
-            onChange={(e) => setAccountId(e.target.value.toLowerCase())}
+            onChange={(e) => setAccountId(e.target.value)}
             required
           />
         </div>

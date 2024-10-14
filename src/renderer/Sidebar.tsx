@@ -35,6 +35,7 @@ const Sidebar: React.FC = () => {
       if (loggedOutAccountId === currentAccountId) {
         // 로컬 스토리지에서 액세스 토큰 제거
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("authority");
         localStorage.removeItem("accountId");
         // 로그인 페이지로 리디렉션
         navigate(LOGIN);

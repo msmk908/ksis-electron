@@ -24,7 +24,7 @@ import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
 import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
-// import ProtectedRoute from './ProtectedRoute';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
   return (
@@ -104,13 +104,13 @@ const RouteHandler = () => {
         <Routes>
           <Route path={MAC} element={<Mac />} />
           <Route path={LOGIN} element={<Login />} />
-          {/* <Route element={<ProtectedRoute />}> */}
+          <Route element={<ProtectedRoute />}>
             <Route path={UPLOAD} element={<UploadComponent />} />
             <Route
               path={UPLOAD_PROGRESS}
               element={<UploadProgressComponent />}
             />
-          {/* </Route> */}
+          </Route>
         </Routes>
       </div>
     </div>
