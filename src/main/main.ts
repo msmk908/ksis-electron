@@ -308,13 +308,4 @@ if (!gotTheLock) {
       });
     }
   });
-
-  ipcMain.handle('show-error-dialog', async (event, { title, message }) => {
-    return dialog.showMessageBox({
-      type: 'error',
-      title: title,
-      message: message,
-      buttons: ['확인'],
-    });
-  });
 }
