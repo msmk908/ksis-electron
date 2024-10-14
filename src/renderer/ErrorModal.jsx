@@ -9,11 +9,14 @@ function Modal({ isOpen, title, message, onClose }) {
       onClick={onClose}
       style={{ zIndex: 1000 }} // z-index 값을 높게 설정하여 모달이 최상단에 보이도록 설정
     >
-      <div className="bg-white p-5 rounded-lg shadow-lg max-w-sm w-full">
+      <div
+        className="bg-white p-5 rounded-lg shadow-lg max-w-sm w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-semibold mb-2">{title}</h2>
         <p className="mb-4">{message}</p>
         <button
-          className="bg-blue-500 text-white p-2 rounded"
+          className="bg-blue-500 text-white p-2 rounded hover:bg-blue-700 hover:text-gray-100"
           onClick={onClose}
         >
           Close

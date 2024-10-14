@@ -325,6 +325,7 @@ function UploadComponent() {
         resolution: `${response.data[0].width}x${response.data[0].height}`,
       }, // 동일한 포맷으로 추가
     ];
+
     setEncodings(newEncodings);
   };
 
@@ -601,9 +602,27 @@ function UploadComponent() {
     titles,
     accountId,
   ) => {
+    // 중복된 포맷-해상도 조합을 제거하는 함수
+    const removeDuplicateEncodings = (encodings) => {
+      const uniqueEncodings = [];
+      const seenCombinations = new Set();
+
+      encodings.forEach((encoding) => {
+        const combination = `${encoding.format}-${encoding.resolution}`;
+        if (!seenCombinations.has(combination)) {
+          seenCombinations.add(combination);
+          uniqueEncodings.push(encoding);
+        }
+      });
+
+      return uniqueEncodings;
+    };
+
     const encodingsWithFileNames = files.reduce((acc, file, index) => {
+      const uniqueEncodings = removeDuplicateEncodings(encodings[index]);
+
       acc[savedResources[index].filename] = {
-        encodings: encodings[index],
+        encodings: uniqueEncodings,
         title: titles[index] || file.name.split('.').slice(0, -1).join('.'),
         accountId: accountId,
       };
@@ -867,12 +886,12 @@ function UploadComponent() {
         onClose={() => setIsModalOpen(false)}
       />
       <br />
-      <h2>파일 업로드</h2>
       <br />
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
-        className="w-full p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer min-h-64"
+        className={`w-full max-w-screen-xl p-4 border-2 border-dashed border-gray-400 rounded-md relative cursor-pointer min-h-64 ${files.length === 0 ? 'hover:border-blue-500 hover:scale-105 transition-transform duration-300 ease-in-out' : ''}`}
+        style={{}} // 최대 크기 제한 및 확장 기준 설정
         onClick={handleAreaClick}
       >
         {files.length === 0 && (
@@ -910,7 +929,7 @@ function UploadComponent() {
       </div>
       <br />
       <button
-        className="mt-4 p-2 bg-blue-500 text-white rounded"
+        className="mt-4 p-2 bg-blue-500 text-white rounded  hover:bg-blue-700 hover:text-gray-100"
         onClick={titleVerification}
       >
         Upload
