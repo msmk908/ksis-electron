@@ -31,3 +31,6 @@ export const FILE_SIZE = '/api/filesize';
 
 // resolutions
 export const RESOLUTION = '/resolution';
+
+// fileType
+export const FILE_TYPE = '/api/filetype';

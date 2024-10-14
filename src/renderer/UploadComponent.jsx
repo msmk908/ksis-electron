@@ -14,9 +14,11 @@ import {
   RESOLUTION,
   SAME_TITLE,
   DELETE_FILE,
+  FILE_TYPE,
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
 import Modal from './ErrorModal'; // 모달 컴포넌트
+import { Button } from './catalyst/button';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -42,18 +44,6 @@ function UploadComponent() {
   // 로컬스토리지에서 accountId 가져오기
   const accountId = localStorage.getItem('accountId');
 
-  // 확장자 화이트리스트
-  const allowedExtensions = [
-    'jpg',
-    'jpeg',
-    'png',
-    'bmp',
-    'mp4',
-    'mov',
-    'avi',
-    'mkv',
-  ];
-
   // 파일 크기 제한을 가져오는 함수
   useEffect(() => {
     const fileSizeLimit = async () => {
@@ -67,28 +57,29 @@ function UploadComponent() {
     fileSizeLimit();
   }, []);
 
-  // 확장자 화이트리스트 검증
-  const isExtensionAllowed = (fileName) => {
-    const fileExtension = fileName.split('.').pop().toLowerCase();
-    return allowedExtensions.includes(fileExtension);
-  };
-
   // 첨부파일 추가 메서드
   const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
 
-    // 파일 화이트리스트 검증
-    const invalidFiles = newFiles.filter(
-      (file) => !isExtensionAllowed(file.name),
-    );
+    // 서버에 파일을 전송하여 MIME 타입 검증
+    const formData = new FormData();
+    newFiles.forEach((file) => {
+      formData.append('files', file);
+    });
 
-    if (invalidFiles.length > 0) {
-      const invalidFileNames = invalidFiles.map((file) => file.name).join(', ');
-      window.alert(
-        '허용되지 않은 파일 형식이 있습니다. 허용되지 않는 파일: ' +
-          invalidFileNames,
-      );
-      return;
+    try {
+      const response = await fetcher.post(FILE_TYPE, formData);
+
+      // 서버 응답 처리
+      if (response.data.invalidFiles && response.data.invalidFiles.length > 0) {
+        // 유효하지 않은 파일이 있을 경우 모달 표시
+        showModal(
+          `첨부할 수 없는 파일: ${response.data.invalidFiles.join(', ')}`,
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('파일 검증 중 오류 발생:', error);
     }
 
     // 파일 용량 검증
@@ -165,18 +156,25 @@ function UploadComponent() {
 
     const newFiles = Array.from(e.dataTransfer.files);
 
-    // 파일 화이트리스트 검증
-    const invalidFiles = newFiles.filter(
-      (file) => !isExtensionAllowed(file.name),
-    );
+    // 서버에 파일을 전송하여 MIME 타입 검증
+    const formData = new FormData();
+    newFiles.forEach((file) => {
+      formData.append('files', file);
+    });
 
-    if (invalidFiles.length > 0) {
-      const invalidFileNames = invalidFiles.map((file) => file.name).join(', ');
-      window.alert(
-        '허용되지 않은 파일 형식이 있습니다. 허용되지 않는 파일: ' +
-          invalidFileNames,
-      );
-      return;
+    try {
+      const response = await fetcher.post(FILE_TYPE, formData);
+
+      // 서버 응답 처리
+      if (response.data.invalidFiles && response.data.invalidFiles.length > 0) {
+        // 유효하지 않은 파일이 있을 경우 모달 표시
+        showModal(
+          `첨부할 수 없는 파일: ${response.data.invalidFiles.join(', ')}`,
+        );
+        return;
+      }
+    } catch (error) {
+      console.error('파일 검증 중 오류 발생:', error);
     }
 
     // 파일 용량 검증
@@ -702,13 +700,13 @@ function UploadComponent() {
 
     const updatedTitles = { ...titles };
 
-    // 숫자가 15개 이상 연속으로 포함된 제목이 있는지 검사
-    const invalidTitles = Object.values(titles).filter((title) =>
-      /^\d{15,}$/.test(title),
+    // 제목이 15자 이상인지 검사
+    const invalidTitles = Object.values(titles).filter(
+      (title) => title.length > 15,
     );
 
     if (invalidTitles.length > 0) {
-      showModal('제목에 숫자가 15개 이상 연속으로 올 수 없습니다.');
+      showModal('제목은 15자를 넘을 수 없습니다.');
       return; // 업로드 중단
     }
 
@@ -928,12 +926,9 @@ function UploadComponent() {
         />
       </div>
       <br />
-      <button
-        className="mt-4 p-2 bg-blue-500 text-white rounded  hover:bg-blue-700 hover:text-gray-100"
-        onClick={titleVerification}
-      >
+      <Button color="cyan" onClick={titleVerification}>
         Upload
-      </button>
+      </Button>
     </div>
   );
 }
