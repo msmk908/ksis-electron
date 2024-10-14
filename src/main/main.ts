@@ -136,7 +136,7 @@ const createWindow = async () => {
       nodeIntegration: false,
     },
     autoHideMenuBar: true,
-    // frame: false, 
+    // frame: false,
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
