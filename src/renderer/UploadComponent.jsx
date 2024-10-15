@@ -18,7 +18,7 @@ import {
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
 import Modal from './ErrorModal'; // 모달 컴포넌트
-import { Button } from './catalyst/button';
+import { Button } from './calayst/button';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -587,6 +587,8 @@ function UploadComponent() {
           break;
         } else {
           throw error;
+          // 업로드 실패 로그
+          uploadLog(accountId, `${fileTitle} 업로드 실패`);
         }
       }
     }
@@ -926,7 +928,11 @@ function UploadComponent() {
         />
       </div>
       <br />
-      <Button color="cyan" onClick={titleVerification}>
+      <Button
+        className="scale-110 border-black"
+        color="sky"
+        onClick={titleVerification}
+      >
         Upload
       </Button>
     </div>

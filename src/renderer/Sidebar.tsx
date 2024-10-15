@@ -5,7 +5,7 @@ import { EventSourcePolyfill } from 'event-source-polyfill';
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
-import { UPLOAD, UPLOAD_PROGRESS, LOGIN  } from '../constants/page_constant';
+import { UPLOAD, UPLOAD_PROGRESS, LOGIN } from '../constants/page_constant';
 
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
 const SSE_URL = `${API_BASE_URL}${EVENT}`;
@@ -13,8 +13,8 @@ const SSE_URL = `${API_BASE_URL}${EVENT}`;
 const Sidebar: React.FC = () => {
   const [accountId, setAccountId] = useState('');
   const navigate = useNavigate();
-  const accessToken = localStorage.getItem("accessToken");
-  
+  const accessToken = localStorage.getItem('accessToken');
+
   // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
   useEffect(() => {
     let eventSource = new EventSourcePolyfill(SSE_URL, {
@@ -26,7 +26,7 @@ const Sidebar: React.FC = () => {
     if (accountId) {
       setAccountId(accountId);
     }
-    
+
     eventSource.addEventListener('logout', (event) => {
       const loggedOutAccountId = event.data;
       const currentAccountId = accountId;
@@ -34,8 +34,8 @@ const Sidebar: React.FC = () => {
       console.log(loggedOutAccountId === currentAccountId);
       if (loggedOutAccountId === currentAccountId) {
         // 로컬 스토리지에서 액세스 토큰 제거
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("accountId");
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('accountId');
         // 로그인 페이지로 리디렉션
         navigate(LOGIN);
         // SSE 연결 종료
@@ -70,13 +70,17 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-100 h-screen bg-orange-200 text-black p-4 fixed">
       <img src={ksisLogo} alt="KSIS Logo" className="w-24 mx-auto"></img>
-      <h3 className="text-center mb-4 "> {accountId}님 환영합니다.</h3>
+      <br />
+      <h3 className="text-center mb-4 ">
+        {' '}
+        <span className="font-bold">{accountId}</span>님 환영합니다.
+      </h3>
       <ul className="space-y-2">
         <li>
           <NavLink
             to={UPLOAD}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }
@@ -88,7 +92,7 @@ const Sidebar: React.FC = () => {
           <NavLink
             to={UPLOAD_PROGRESS}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }
@@ -98,10 +102,10 @@ const Sidebar: React.FC = () => {
         </li>
         <li>
           <NavLink
-            to={"/"}
+            to={'/'}
             onClick={handleLogout}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }
