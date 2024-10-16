@@ -18,7 +18,7 @@ import {
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
 import Modal from './ErrorModal'; // 모달 컴포넌트
-import { Button } from './calayst/button';
+import { Button } from './catalyst/button';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
