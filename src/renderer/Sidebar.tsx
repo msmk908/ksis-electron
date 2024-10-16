@@ -5,23 +5,23 @@ import { EventSourcePolyfill } from 'event-source-polyfill';
 import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
-import { UPLOAD, UPLOAD_PROGRESS, LOGIN  } from '../constants/page_constant';
+import { UPLOAD, UPLOAD_PROGRESS, LOGIN } from '../constants/page_constant';
 const API_WS_URL = window.env.API_WS_URL;
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
 const SSE_URL = `${API_BASE_URL}${EVENT}`;
 
 const Sidebar: React.FC = () => {
-  const accountId = localStorage.getItem("accountId");
+  const accountId = localStorage.getItem('accountId');
   const navigate = useNavigate();
-  const accessToken = localStorage.getItem("accessToken");
+  const accessToken = localStorage.getItem('accessToken');
 
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
     if (accessToken) {
       // 웹소켓 연결 생성
-    
-      const newWs = new WebSocket(API_WS_URL+'/ws/login');
+
+      const newWs = new WebSocket(API_WS_URL + '/ws/login');
       setWs(newWs);
 
       newWs.onopen = () => {
@@ -37,7 +37,7 @@ const Sidebar: React.FC = () => {
         console.error('WebSocket error:', error);
       };
 
-      newWs.onmessage = (event) => {  
+      newWs.onmessage = (event) => {
         console.log('Received message:', event);
         const message = JSON.parse(event.data);
         console.log('Parsed message:', message);
@@ -45,12 +45,12 @@ const Sidebar: React.FC = () => {
         if (message.action === 'logout') {
           console.log('Logout action received via WebSocket');
           localStorage.removeItem('accessToken');
-          newWs.close(); 
-          navigate(LOGIN); 
+          newWs.close();
+          navigate(LOGIN);
         }
       };
     }
-  }, []); 
+  }, []);
 
   const handleLogout = async () => {
     const accountId = localStorage.getItem('accountId');
@@ -62,10 +62,10 @@ const Sidebar: React.FC = () => {
         accountId,
         category: 'LOGOUT',
       });
-      if(ws){
-      ws.send(JSON.stringify({ action: 'logout', token: accessToken }));
-      ws.close
-      }else{
+      if (ws) {
+        ws.send(JSON.stringify({ action: 'logout', token: accessToken }));
+        ws.close;
+      } else {
         console.log('WebSocket is not connected');
       }
       // 로그아웃 성공 시 로컬스토리지 토큰 제거
@@ -83,13 +83,17 @@ const Sidebar: React.FC = () => {
   return (
     <div className="w-100 h-screen bg-orange-200 text-black p-4 fixed">
       <img src={ksisLogo} alt="KSIS Logo" className="w-24 mx-auto"></img>
-      <h3 className="text-center mb-4 "> {accountId}님 환영합니다.</h3>
+      <br />
+      <h3 className="text-center mb-4 ">
+        {' '}
+        <span className="font-bold">{accountId}</span>님 환영합니다.
+      </h3>
       <ul className="space-y-2">
         <li>
           <NavLink
             to={UPLOAD}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }
@@ -101,7 +105,7 @@ const Sidebar: React.FC = () => {
           <NavLink
             to={UPLOAD_PROGRESS}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }
@@ -111,10 +115,10 @@ const Sidebar: React.FC = () => {
         </li>
         <li>
           <NavLink
-            to={"/"}
+            to={'/'}
             onClick={handleLogout}
             className={({ isActive }) =>
-              `text-center block text-lg p-2 rounded-full ${
+              `text-center block text-lg font-bold p-2 rounded-full ${
                 isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
               }`
             }

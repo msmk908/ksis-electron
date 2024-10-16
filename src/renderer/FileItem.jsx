@@ -112,6 +112,7 @@ const FileItem = ({
                     <option value="png">PNG</option>
                     <option value="jpg">JPG</option>
                     <option value="bmp">BMP</option>
+                    <option value="AAA">AAA</option>
                   </>
                 ) : (
                   <>

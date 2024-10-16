@@ -14,13 +14,11 @@ import {
   UPLOAD,
   UPLOAD_PROGRESS,
 } from '../constants/page_constant';
-import icon from '../../assets/icon.svg';
 import UploadComponent from './UploadComponent';
 import UploadProgressComponent from './UploadProgressComponent';
 import Sidebar from './Sidebar'; // 사이드바 컴포넌트 import
 import Login from './Login';
 import Mac from './Mac';
-import EncodingComplete from './EncodingComplete';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
 import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
@@ -105,11 +103,8 @@ const RouteHandler = () => {
           <Route path={MAC} element={<Mac />} />
           <Route path={LOGIN} element={<Login />} />
           {/* <Route element={<ProtectedRoute />}> */}
-            <Route path={UPLOAD} element={<UploadComponent />} />
-            <Route
-              path={UPLOAD_PROGRESS}
-              element={<UploadProgressComponent />}
-            />
+          <Route path={UPLOAD} element={<UploadComponent />} />
+          <Route path={UPLOAD_PROGRESS} element={<UploadProgressComponent />} />
           {/* </Route> */}
         </Routes>
       </div>

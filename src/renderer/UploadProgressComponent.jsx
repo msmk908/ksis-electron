@@ -252,6 +252,8 @@ function UploadProgressComponent() {
           window.alert('업로드 중지');
           break;
         } else {
+          // 업로드 실패 로그
+          uploadLog(accountId, `${fileTitle} 업로드 실패`);
           throw error;
         }
       }
@@ -441,78 +443,96 @@ function UploadProgressComponent() {
   };
 
   return (
-    <div className="p-4">
-      <h2 className="text-2xl font-bold mb-6 text-gray-700">
+    <div className="p-4 min-h-screen flex flex-col">
+      {/* 제목은 맨 위에 고정 */}
+      <h2 className="text-2xl font-bold mb-6 text-gray-700 text-left">
         업로드 진행 상황
       </h2>
-      {Object.entries(progress).map(([fileName, { progress, previewUrl }]) => (
-        <div
-          key={fileName}
-          className="flex items-center justify-between mb-4 bg-white p-4 rounded-lg shadow-md border border-gray-200"
-        >
-          {/* 미리보기 이미지 */}
-          <div className="w-1/6">
-            {previewUrl && previewUrl !== 'video-icon' ? (
-              <img
-                src={previewUrl}
-                alt={`${fileName} preview`}
-                className="w-full h-auto rounded-md"
-              />
-            ) : (
-              <img
-                src={videoIcon}
-                alt={`${fileName} preview`}
-                className="w-full h-auto rounded-md"
-              />
-            )}
-          </div>
 
-          {/* 파일 정보 및 진행률 */}
-          <div className="w-4/6 pl-4">
-            <p className="text-lg font-semibold text-gray-700 truncate">
-              {fileName}
+      {/* 업로드 중인 파일이 없을 경우 메시지 출력 */}
+      {Object.keys(progress).length === 0 ? (
+        <div className="flex flex-col items-center justify-center flex-grow">
+          <div className="flex items-center justify-center text-gray-400 mb-4">
+            <p className="text-gray-600 text-xl font-semibold animate-pulse">
+              업로드 중인 파일이 없습니다.
             </p>
-            <div className="relative w-full h-4 bg-gray-300 rounded-full mt-2">
-              <div
-                className={`h-4 rounded-full ${
-                  progress === 100 ? 'bg-green-500' : 'bg-blue-500'
-                }`}
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <p className="text-sm text-gray-600 mt-1">{progress}%</p>
-          </div>
-
-          {/* 조작 버튼들 또는 업로드 완료 메시지 */}
-          <div className="w-1/6 flex items-center justify-end space-x-2">
-            {progress < 100 ? (
-              <>
-                <button
-                  onClick={() => handlePauseResume(fileName)}
-                  className={`${
-                    pausedFilesState.has(fileName)
-                      ? 'bg-yellow-400 hover:bg-yellow-500'
-                      : 'bg-blue-500 hover:bg-blue-600'
-                  } text-white font-bold px-3 py-1 rounded-md transition-colors duration-300`}
-                  title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
-                >
-                  {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
-                </button>
-                {pausedFilesState.has(fileName) && (
-                  <button
-                    onClick={() => handleDelete(fileName)}
-                    className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-md transition-colors duration-300"
-                  >
-                    X
-                  </button>
-                )}
-              </>
-            ) : (
-              <span className="text-green-500 font-bold">업로드 완료</span>
-            )}
           </div>
         </div>
-      ))}
+      ) : (
+        Object.entries(progress).map(([fileName, { progress, previewUrl }]) => (
+          <div
+            key={fileName}
+            className="flex items-center justify-between mb-4 bg-white p-4 rounded-lg shadow-md border border-gray-200"
+          >
+            {/* 미리보기 이미지 */}
+            <div className="w-1/6">
+              {previewUrl && previewUrl !== 'video-icon' ? (
+                <img
+                  src={previewUrl}
+                  alt={`${fileName} preview`}
+                  className="w-full h-auto rounded-md"
+                />
+              ) : (
+                <img
+                  src={videoIcon}
+                  alt={`${fileName} preview`}
+                  className="w-full h-auto rounded-md"
+                />
+              )}
+            </div>
+
+            {/* 파일 정보 및 진행률 */}
+            <div className="w-4/6 pl-4">
+              <p
+                className="text-lg font-semibold text-gray-700 truncate"
+                title={fileName}
+              >
+                {fileName.length > 30
+                  ? `${fileName.slice(0, 30)}...`
+                  : fileName}
+              </p>
+              <div className="relative w-full h-4 bg-gray-300 rounded-full mt-2">
+                <div
+                  className={`h-4 rounded-full ${
+                    progress === 100 ? 'bg-green-500' : 'bg-blue-500'
+                  }`}
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">{progress}%</p>
+            </div>
+
+            {/* 조작 버튼들 또는 업로드 완료 메시지 */}
+            <div className="w-1/6 flex items-center justify-end space-x-2">
+              {progress < 100 ? (
+                <>
+                  <button
+                    onClick={() => handlePauseResume(fileName)}
+                    className={`${
+                      pausedFilesState.has(fileName)
+                        ? 'bg-yellow-400 hover:bg-yellow-500'
+                        : 'bg-blue-500 hover:bg-blue-600'
+                    } text-white font-bold px-3 py-1 rounded-md transition-colors duration-300`}
+                    title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
+                  >
+                    {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
+                  </button>
+                  {pausedFilesState.has(fileName) && (
+                    <button
+                      onClick={() => handleDelete(fileName)}
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-md transition-colors duration-300"
+                    >
+                      X
+                    </button>
+                  )}
+                </>
+              ) : (
+                <span className="text-green-500 font-bold">업로드 완료</span>
+              )}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }
