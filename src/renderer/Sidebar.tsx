@@ -6,43 +6,51 @@ import ksisLogo from '../../assets/logo/ksis-logo.png';
 import fetcher from '../fetcher';
 import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
 import { UPLOAD, UPLOAD_PROGRESS, LOGIN  } from '../constants/page_constant';
-
+const API_WS_URL = window.env.API_WS_URL;
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
 const SSE_URL = `${API_BASE_URL}${EVENT}`;
 
 const Sidebar: React.FC = () => {
-  const [accountId, setAccountId] = useState('');
+  const accountId = localStorage.getItem("accountId");
   const navigate = useNavigate();
   const accessToken = localStorage.getItem("accessToken");
-  
-  // useEffect를 사용해 컴포넌트가 마운트될 때 로컬 스토리지에서 값을 가져오도록 함
+
+  const [ws, setWs] = useState<WebSocket | null>(null);
+
   useEffect(() => {
-    let eventSource = new EventSourcePolyfill(SSE_URL, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`, // 액세스 토큰을 Authorization 헤더에 추가
-      },
-    });
-    const accountId = localStorage.getItem('accountId');
-    if (accountId) {
-      setAccountId(accountId);
-    }
+    if (accessToken) {
+      // 웹소켓 연결 생성
     
-    eventSource.addEventListener('logout', (event) => {
-      const loggedOutAccountId = event.data;
-      const currentAccountId = accountId;
-      console.log('event data : ', event.data, accountId);
-      console.log(loggedOutAccountId === currentAccountId);
-      if (loggedOutAccountId === currentAccountId) {
-        // 로컬 스토리지에서 액세스 토큰 제거
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("accountId");
-        // 로그인 페이지로 리디렉션
-        navigate(LOGIN);
-        // SSE 연결 종료
-        eventSource.close(); // 로그아웃 후 SSE 연결 종료
-      }
-    });
-  }, []); // 빈 배열을 의존성으로 하여 컴포넌트가 처음 마운트될 때만 실행됨
+      const newWs = new WebSocket(API_WS_URL+'/ws/login');
+      setWs(newWs);
+
+      newWs.onopen = () => {
+        console.log('WebSocket connection opened');
+        newWs.send(JSON.stringify({ action: 'register', token: accessToken }));
+      };
+
+      newWs.onclose = () => {
+        console.log('WebSocket connection closed');
+      };
+
+      newWs.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+
+      newWs.onmessage = (event) => {  
+        console.log('Received message:', event);
+        const message = JSON.parse(event.data);
+        console.log('Parsed message:', message);
+
+        if (message.action === 'logout') {
+          console.log('Logout action received via WebSocket');
+          localStorage.removeItem('accessToken');
+          newWs.close(); 
+          navigate(LOGIN); 
+        }
+      };
+    }
+  }, []); 
 
   const handleLogout = async () => {
     const accountId = localStorage.getItem('accountId');
@@ -54,7 +62,12 @@ const Sidebar: React.FC = () => {
         accountId,
         category: 'LOGOUT',
       });
-
+      if(ws){
+      ws.send(JSON.stringify({ action: 'logout', token: accessToken }));
+      ws.close
+      }else{
+        console.log('WebSocket is not connected');
+      }
       // 로그아웃 성공 시 로컬스토리지 토큰 제거
       localStorage.removeItem('accessToken');
       localStorage.removeItem('accountId');
