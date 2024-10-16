@@ -18,7 +18,7 @@ const Login = () => {
     try {
       const response = await fetcher.post(LOGIN, credentials);
       const data = response.data;
-      
+
       if (data.accessToken) {
         localStorage.setItem('accessToken', data.accessToken);
         localStorage.setItem('accountId', accountId);
