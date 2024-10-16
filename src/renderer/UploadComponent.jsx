@@ -702,13 +702,23 @@ function UploadComponent() {
 
     const updatedTitles = { ...titles };
 
-    // 제목이 15자 이상인지 검사
+    // 숫자가 연속으로 16개 이상인지 검사
     const invalidTitles = Object.values(titles).filter(
-      (title) => title.length > 15,
+      (title) => /\d{16,}/.test(title), // 16개 이상의 연속된 숫자가 있는지 검사
     );
 
     if (invalidTitles.length > 0) {
-      showModal('제목은 15자를 넘을 수 없습니다.');
+      showModal('제목에 숫자가 16자 이상 연속될 수 없습니다.');
+      return; // 업로드 중단
+    }
+
+    // 제목 길이가 50자를 초과하는지 검사
+    const longTitles = Object.values(titles).filter(
+      (title) => title.length > 50, // 50자를 넘는지 검사
+    );
+
+    if (longTitles.length > 0) {
+      showModal('제목은 50자를 넘을 수 없습니다.');
       return; // 업로드 중단
     }
 

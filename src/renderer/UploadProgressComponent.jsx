@@ -483,8 +483,13 @@ function UploadProgressComponent() {
 
             {/* 파일 정보 및 진행률 */}
             <div className="w-4/6 pl-4">
-              <p className="text-lg font-semibold text-gray-700 truncate">
-                {fileName}
+              <p
+                className="text-lg font-semibold text-gray-700 truncate"
+                title={fileName}
+              >
+                {fileName.length > 30
+                  ? `${fileName.slice(0, 30)}...`
+                  : fileName}
               </p>
               <div className="relative w-full h-4 bg-gray-300 rounded-full mt-2">
                 <div
