@@ -64,6 +64,7 @@ contextBridge.exposeInMainWorld('electron', electronHandler);
 
 const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 const webBaseUrl = process.env.REACT_APP_WEB_BASE_URL;
+const webSocketUrl = process.env.REACT_APP_WS_API_URL;
 console.log('apiBaseUrl : ', apiBaseUrl);
 console.log('webBaseUrl : ', webBaseUrl);
 
@@ -75,6 +76,7 @@ contextBridge.exposeInMainWorld('env', {
 
   API_BASE_URL: apiBaseUrl || 'https://www.ksisdisplay.com/api',
   WEB_BASE_URL: webBaseUrl || 'https://www.ksisdisplay.com',
+  API_WS_URL: webSocketUrl || 'ws://localhost:8080',
 });
 
 export type ElectronHandler = typeof electronHandler;

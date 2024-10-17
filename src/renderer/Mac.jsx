@@ -44,11 +44,11 @@ const Mac = () => {
 
   return (
     <div className="flex flex-col justify-center items-center h-screen bg-orange-100">
-      <img src={ksisLogo} alt="KSIS Logo" className="mb-6 w-40 h-auto" />
-      <br></br>
+      <img src={ksisLogo} alt="KSIS Logo" className="mb-8 w-40 h-auto" />
+
       <button
         onClick={handleLogin}
-        className="py-2 px-16 bg-orange-300 text-black border border-orange-400 rounded-md text-base cursor-pointer transition-colors duration-300 hover:bg-orange-600"
+        className="py-3 px-20 bg-orange-400 text-white rounded-lg shadow-md text-lg font-semibold cursor-pointer transition-all duration-300 hover:bg-orange-500 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-orange-300"
       >
         로그인 하러가기
       </button>

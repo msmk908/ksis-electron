@@ -7,6 +7,7 @@ declare global {
     env: {
       API_BASE_URL: string;
       WEB_BASE_URL: string;
+      API_WS_URL: string;
     };
   }
 }
