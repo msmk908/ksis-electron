@@ -45,49 +45,52 @@ const Login = () => {
 
   return (
     <div className="flex justify-center items-center h-screen bg-orange-100">
-      <form
-        id="login-form"
-        className="flex flex-col items-center w-11/12 max-w-md"
-        onSubmit={handleSubmit}
-      >
-        <h1 className="text-black mb-5 text-4xl text-center">로그인</h1>
-        <div className="form-row flex items-center mb-4 w-full">
-          <div className="bg-orange-300 text-black py-2 px-4 rounded-l-md font-bold text-base w-1/3 text-center">
-            아이디
-          </div>
-          <input
-            type="text"
-            id="accountId"
-            className="py-2 px-4 border border-orange-400 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
-            value={accountId}
-            onChange={(e) => setAccountId(e.target.value.toLowerCase())}
-            required
-          />
-        </div>
-        <div className="form-row flex items-center mb-4 w-full">
-          <div className="bg-orange-300 text-black py-2 px-4 rounded-l-md font-bold text-base w-1/3 text-center">
-            비밀번호
-          </div>
-          <input
-            type="password"
-            id="password"
-            className="py-2 px-4 border border-orange-500 rounded-r-md text-base flex-1 text-black placeholder-orange-500"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        {error && (
-          <div className="text-red-600 mb-4">{error}</div> // 오류 메시지 표시
-        )}
-        <button
-          type="submit"
-          className="mt-5 w-full py-2 bg-orange-300 text-black border-none rounded-md text-base cursor-pointer transition-colors duration-300 hover:bg-orange-600"
-        >
-          로그인
-        </button>
-      </form>
+  <form
+    id="login-form"
+    className="flex flex-col items-center w-full max-w-md bg-white p-8 rounded-lg shadow-lg"
+    onSubmit={handleSubmit}
+  >
+    <h1 className="text-orange-500 mb-6 text-4xl font-semibold text-center">로그인</h1>
+
+    <div className="form-row w-full mb-5">
+      <label htmlFor="accountId" className="block text-sm font-medium text-gray-700 mb-1">
+        아이디
+      </label>
+      <input
+        type="text"
+        id="accountId"
+        className="w-full py-3 px-4 border border-orange-400 rounded-lg shadow-sm text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+        value={accountId}
+        onChange={(e) => setAccountId(e.target.value.toLowerCase())}
+        required
+      />
     </div>
+
+    <div className="form-row w-full mb-6">
+      <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+        비밀번호
+      </label>
+      <input
+        type="password"
+        id="password"
+        className="w-full py-3 px-4 border border-orange-400 rounded-lg shadow-sm text-base text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        required
+      />
+    </div>
+
+    {error && <div className="text-red-600 mb-4">{error}</div>}
+
+    <button
+      type="submit"
+      className="w-full py-3 bg-orange-400 text-white rounded-lg shadow-md text-base font-semibold cursor-pointer transition-all duration-300 hover:bg-orange-500 hover:shadow-lg"
+    >
+      로그인
+    </button>
+  </form>
+</div>
+
   );
 };
 
