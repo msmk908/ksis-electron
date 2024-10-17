@@ -145,18 +145,18 @@ const FileItem = ({
 
             {encodingIndex === encodings[fileIndex].length - 1 && (
               <>
-                <div className="w-10">
+                <div className="w-auto">
                   <button
-                    className="w-full p-2 bg-blue-500 text-white rounded"
+                    className="bg-blue-500 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     onClick={() => addEncoding(fileIndex)}
                   >
                     +
                   </button>
                 </div>
 
-                <div className="w-10">
+                <div className="w-auto">
                   <button
-                    className="w-full p-2 bg-red-500 text-white rounded"
+                    className="bg-red-500 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     onClick={() => removeEncoding(fileIndex, encodingIndex)}
                     disabled={encodings[fileIndex].length <= 1}
                   >
