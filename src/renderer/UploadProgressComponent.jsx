@@ -531,7 +531,7 @@ function UploadProgressComponent() {
                       pausedFilesState.has(fileName)
                         ? 'bg-yellow-400 hover:bg-yellow-500'
                         : 'bg-blue-500 hover:bg-blue-600'
-                    } text-white font-bold px-3 py-1 rounded-md transition-colors duration-300`}
+                    } text-white font-bold w-9 h-9 rounded-full flex items-center justify-center`}
                     title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
                   >
                     {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
@@ -539,7 +539,7 @@ function UploadProgressComponent() {
                   {pausedFilesState.has(fileName) && (
                     <button
                       onClick={() => handleDelete(fileName)}
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-md transition-colors duration-300"
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     >
                       X
                     </button>
