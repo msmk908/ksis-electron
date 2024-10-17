@@ -17,8 +17,13 @@ import {
   FILE_TYPE,
 } from '../constants/api_constant';
 import { UPLOAD_PROGRESS } from '../constants/page_constant';
-import Modal from './ErrorModal'; // 모달 컴포넌트
 import { Button } from './catalyst/button';
+import {
+  Alert,
+  AlertActions,
+  AlertDescription,
+  AlertTitle,
+} from './catalyst/alert';
 
 function UploadComponent() {
   const [files, setFiles] = useState([]); // 첨부한 파일 저장
@@ -29,16 +34,18 @@ function UploadComponent() {
   const [fileSizeLimit, setFileSizeLimit] = useState({}); // 파일 크기 제한 저장
   const [titlesVerified, setTitlesVerified] = useState(false);
   const [errors, setErrors] = useState({}); // 에러 상태 추가
-  const [isModalOpen, setIsModalOpen] = useState(false); // 모달 상태 추가
-  const [modalMessage, setModalMessage] = useState(''); // 모달 메시지 관리
+  const [isAlertOpen, setIsAlertOpen] = useState(false); // 알림창 상태 추가
+  const [alertMessage, setAlertMessage] = useState(''); // 알림창 메시지 상태 추가
+  const [confirmAction, setConfirmAction] = useState(null); // 확인 버튼을 눌렀을 때 실행할 함수
   const fileInputRef = useRef(null); // 파일첨부 기능
   const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB로 청크 사이즈 설정
   const navigate = useNavigate(); // 네비게이트 훅 사용
 
-  // 모달 보여주는 메서드
-  const showModal = (message) => {
-    setModalMessage(message);
-    setIsModalOpen(true);
+  // 알림창 메서드
+  const showAlert = (message, onConfirm = null) => {
+    setAlertMessage(message);
+    setIsAlertOpen(true);
+    setConfirmAction(() => onConfirm); // 확인 버튼을 눌렀을 때 실행할 액션
   };
 
   // 로컬스토리지에서 accountId 가져오기
@@ -73,7 +80,7 @@ function UploadComponent() {
       // 서버 응답 처리
       if (response.data.invalidFiles && response.data.invalidFiles.length > 0) {
         // 유효하지 않은 파일이 있을 경우 모달 표시
-        showModal(
+        showAlert(
           `첨부할 수 없는 파일: ${response.data.invalidFiles.join(', ')}`,
         );
         return;
@@ -100,7 +107,7 @@ function UploadComponent() {
     });
 
     if (exceededFiles.length > 0) {
-      showModal('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      showAlert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
       return; // 파일 첨부 중단
     }
 
@@ -168,7 +175,7 @@ function UploadComponent() {
       // 서버 응답 처리
       if (response.data.invalidFiles && response.data.invalidFiles.length > 0) {
         // 유효하지 않은 파일이 있을 경우 모달 표시
-        showModal(
+        showAlert(
           `첨부할 수 없는 파일: ${response.data.invalidFiles.join(', ')}`,
         );
         return;
@@ -195,7 +202,7 @@ function UploadComponent() {
     });
 
     if (exceededFiles.length > 0) {
-      showModal('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
+      showAlert('한번에 올릴 수 있는 파일 크기를 초과했습니다.');
       return; // 파일 첨부 중단
     }
 
@@ -583,7 +590,7 @@ function UploadComponent() {
         }
       } catch (error) {
         if (axios.isCancel(error)) {
-          showModal('업로드 중지');
+          showAlert('업로드 중지');
           break;
         } else {
           throw error;
@@ -696,7 +703,7 @@ function UploadComponent() {
     const emptyTitleFiles = files.filter((_, index) => !titles[index]);
 
     if (emptyTitleFiles.length > 0) {
-      showModal('제목을 입력하세요.');
+      showAlert('제목을 입력하세요.');
       return; // 업로드 중단
     }
 
@@ -708,7 +715,7 @@ function UploadComponent() {
     );
 
     if (invalidTitles.length > 0) {
-      showModal('제목에 숫자가 16자 이상 연속될 수 없습니다.');
+      showAlert('제목에 숫자가 16자 이상 연속될 수 없습니다.');
       return; // 업로드 중단
     }
 
@@ -718,7 +725,7 @@ function UploadComponent() {
     );
 
     if (longTitles.length > 0) {
-      showModal('제목은 50자를 넘을 수 없습니다.');
+      showAlert('제목은 50자를 넘을 수 없습니다.');
       return; // 업로드 중단
     }
 
@@ -745,7 +752,7 @@ function UploadComponent() {
   // 업로드 버튼 함수
   const handleUpload = async () => {
     if (files.length == 0) {
-      showModal('파일이 없습니다.'); // 다시 모달 열기
+      showAlert('파일이 없습니다.'); // 다시 모달 열기
       setTitlesVerified(false);
       return;
     }
@@ -760,12 +767,11 @@ function UploadComponent() {
     });
 
     if (invalidEncodings.length > 0) {
-      showModal('해상도를 설정해주세요.');
+      showAlert('해상도를 설정해주세요.');
       setTitlesVerified(false);
       return; // 업로드 중단
     }
 
-    window.alert('업로드를 진행합니다. 진행 상황 페이지로 이동합니다.');
     navigate(UPLOAD_PROGRESS, {
       state: {
         files,
@@ -889,12 +895,25 @@ function UploadComponent() {
 
   return (
     <div className="mr-10">
-      <Modal
-        isOpen={isModalOpen}
-        title="Error"
-        message={modalMessage}
-        onClose={() => setIsModalOpen(false)}
-      />
+      <Alert open={isAlertOpen} onClose={() => setIsAlertOpen(false)} size="lg">
+        <AlertTitle>알림창</AlertTitle>
+        <AlertDescription>{alertMessage}</AlertDescription>
+        <AlertActions>
+          <Button plain onClick={() => setIsAlertOpen(false)}>
+            취소
+          </Button>
+          {confirmAction && (
+            <Button
+              onClick={() => {
+                setIsAlertOpen(false);
+                if (confirmAction) confirmAction(); // 확인 버튼 클릭 시 지정된 액션 수행
+              }}
+            >
+              확인
+            </Button>
+          )}
+        </AlertActions>
+      </Alert>
       <br />
       <br />
       <div
@@ -941,7 +960,9 @@ function UploadComponent() {
       <Button
         className="scale-110 border-black"
         color="sky"
-        onClick={titleVerification}
+        onClick={() =>
+          showAlert('파일을 업로드 하시겠습니까?', titleVerification)
+        }
       >
         Upload
       </Button>

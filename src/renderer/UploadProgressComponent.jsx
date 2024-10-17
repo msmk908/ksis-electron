@@ -264,13 +264,32 @@ function UploadProgressComponent() {
   const requestEncoding = async (
     file,
     savedResource,
-    encoding,
+    encodings,
     title,
     accountId,
   ) => {
+    // 중복된 포맷-해상도 조합을 제거하는 함수
+    const removeDuplicateEncodings = (encodings) => {
+      const uniqueEncodings = [];
+      const seenCombinations = new Set();
+
+      encodings.forEach((encoding) => {
+        const combination = `${encoding.format}-${encoding.resolution}`;
+        if (!seenCombinations.has(combination)) {
+          seenCombinations.add(combination);
+          uniqueEncodings.push(encoding);
+        }
+      });
+
+      return uniqueEncodings;
+    };
+
+    // 중복 값 제거 후 처리
+    const uniqueEncodings = removeDuplicateEncodings(encodings);
+
     const encodingsWithFileNames = {
       [savedResource.filename]: {
-        encodings: encoding, // 단일 파일의 인코딩 정보
+        encodings: uniqueEncodings, // 중복 제거된 인코딩 정보
         title: title || file.name.split('.').slice(0, -1).join('.'),
         accountId: accountId,
       },
