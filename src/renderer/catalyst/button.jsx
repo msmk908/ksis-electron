@@ -1,7 +1,7 @@
-import * as Headless from '@headlessui/react'
-import clsx from 'clsx'
-import React, { forwardRef } from 'react'
-import { Link } from './link'
+import * as Headless from '@headlessui/react';
+import clsx from 'clsx';
+import React, { forwardRef } from 'react';
+import { Link } from './link';
 
 const styles = {
   base: [
@@ -156,25 +156,36 @@ const styles = {
       '[--btn-icon:theme(colors.rose.300)] data-[active]:[--btn-icon:theme(colors.rose.200)] data-[hover]:[--btn-icon:theme(colors.rose.200)]',
     ],
   },
-}
+};
 
-export const Button = forwardRef(function Button({ color, outline, plain, className, children, ...props }, ref) {
+export const Button = forwardRef(function Button(
+  { color, outline, plain, className, children, ...props },
+  ref,
+) {
   let classes = clsx(
     className,
     styles.base,
-    outline ? styles.outline : plain ? styles.plain : clsx(styles.solid, styles.colors[color ?? 'dark/zinc'])
-  )
+    outline
+      ? styles.outline
+      : plain
+        ? styles.plain
+        : clsx(styles.solid, styles.colors[color ?? 'dark/zinc']),
+  );
 
   return 'href' in props ? (
     <Link {...props} className={classes} ref={ref}>
       <TouchTarget>{children}</TouchTarget>
     </Link>
   ) : (
-    <Headless.Button {...props} className={clsx(classes, 'cursor-default')} ref={ref}>
+    <Headless.Button
+      {...props}
+      className={clsx(classes, 'cursor-default')}
+      ref={ref}
+    >
       <TouchTarget>{children}</TouchTarget>
     </Headless.Button>
-  )
-})
+  );
+});
 
 /**
  * Expand the hit area to at least 44×44px on touch devices
@@ -188,5 +199,5 @@ export function TouchTarget({ children }) {
       />
       {children}
     </>
-  )
+  );
 }

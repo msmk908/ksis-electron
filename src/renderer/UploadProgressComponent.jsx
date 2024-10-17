@@ -264,13 +264,32 @@ function UploadProgressComponent() {
   const requestEncoding = async (
     file,
     savedResource,
-    encoding,
+    encodings,
     title,
     accountId,
   ) => {
+    // 중복된 포맷-해상도 조합을 제거하는 함수
+    const removeDuplicateEncodings = (encodings) => {
+      const uniqueEncodings = [];
+      const seenCombinations = new Set();
+
+      encodings.forEach((encoding) => {
+        const combination = `${encoding.format}-${encoding.resolution}`;
+        if (!seenCombinations.has(combination)) {
+          seenCombinations.add(combination);
+          uniqueEncodings.push(encoding);
+        }
+      });
+
+      return uniqueEncodings;
+    };
+
+    // 중복 값 제거 후 처리
+    const uniqueEncodings = removeDuplicateEncodings(encodings);
+
     const encodingsWithFileNames = {
       [savedResource.filename]: {
-        encodings: encoding, // 단일 파일의 인코딩 정보
+        encodings: uniqueEncodings, // 중복 제거된 인코딩 정보
         title: title || file.name.split('.').slice(0, -1).join('.'),
         accountId: accountId,
       },
@@ -512,7 +531,7 @@ function UploadProgressComponent() {
                       pausedFilesState.has(fileName)
                         ? 'bg-yellow-400 hover:bg-yellow-500'
                         : 'bg-blue-500 hover:bg-blue-600'
-                    } text-white font-bold px-3 py-1 rounded-md transition-colors duration-300`}
+                    } text-white font-bold w-9 h-9 rounded-full flex items-center justify-center`}
                     title={pausedFilesState.has(fileName) ? 'Resume' : 'Pause'}
                   >
                     {pausedFilesState.has(fileName) ? '▶️' : '⏸️'}
@@ -520,7 +539,7 @@ function UploadProgressComponent() {
                   {pausedFilesState.has(fileName) && (
                     <button
                       onClick={() => handleDelete(fileName)}
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold px-3 py-1 rounded-md transition-colors duration-300"
+                      className="bg-red-500 hover:bg-red-600 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     >
                       X
                     </button>

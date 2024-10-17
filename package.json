@@ -98,6 +98,7 @@
   "dependencies": {
     "@electron/notarize": "^2.3.2",
     "@headlessui/react": "^2.1.10",
+    "@heroicons/react": "^2.1.5",
     "axios": "^1.7.3",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.5",

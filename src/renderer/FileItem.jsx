@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import fetcher from '../fetcher';
 import { RESOLUTION } from '../constants/api_constant';
+import { Select } from './catalyst/select';
 
 // 상위로 파일첨부 이벤트 전파를 막음
 const handleClick = (e) => {
@@ -99,9 +100,8 @@ const FileItem = ({
 
         {encodings[fileIndex]?.map((encoding, encodingIndex) => (
           <div key={encodingIndex} className="flex space-x-4 mb-4">
-            <div className="w-1/4">
-              <select
-                className="p-2 border rounded-md w-full"
+            <div className="w-auto">
+              <Select
                 value={encoding.format}
                 onChange={(e) =>
                   handleFormatChange(fileIndex, encodingIndex, e)
@@ -122,12 +122,11 @@ const FileItem = ({
                     <option value="mkv">MKV</option>
                   </>
                 )}
-              </select>
+              </Select>
             </div>
 
-            <div className="w-1/4">
-              <select
-                className="p-2 border rounded-md w-full"
+            <div className="w-auto">
+              <Select
                 value={encoding.resolution}
                 onChange={(e) =>
                   handleResolutionChange(fileIndex, encodingIndex, e)
@@ -141,23 +140,23 @@ const FileItem = ({
                     {`${res.width}x${res.height}`}
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             {encodingIndex === encodings[fileIndex].length - 1 && (
               <>
-                <div className="w-1/4">
+                <div className="w-auto">
                   <button
-                    className="w-full p-2 bg-blue-500 text-white rounded"
+                    className="bg-blue-500 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     onClick={() => addEncoding(fileIndex)}
                   >
                     +
                   </button>
                 </div>
 
-                <div className="w-1/4">
+                <div className="w-auto">
                   <button
-                    className="w-full p-2 bg-red-500 text-white rounded"
+                    className="bg-red-500 text-white font-bold w-9 h-9 rounded-full flex items-center justify-center"
                     onClick={() => removeEncoding(fileIndex, encodingIndex)}
                     disabled={encodings[fileIndex].length <= 1}
                   >
