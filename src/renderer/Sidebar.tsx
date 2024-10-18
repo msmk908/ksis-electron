@@ -8,13 +8,16 @@ import { EVENT, ACCESS_LOG, LOGOUT } from '../constants/api_constant';
 import { UPLOAD, UPLOAD_PROGRESS, LOGIN } from '../constants/page_constant';
 const API_WS_URL = window.env.API_WS_URL;
 const API_BASE_URL = window.env.API_BASE_URL; // API Base URL 가져오기
-const SSE_URL = `${API_BASE_URL}${EVENT}`;
 
-const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  toggleSidebar: () => void;
+}
+
+const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const accountId = localStorage.getItem('accountId');
   const navigate = useNavigate();
   const accessToken = localStorage.getItem('accessToken');
-
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
@@ -80,53 +83,69 @@ const Sidebar: React.FC = () => {
     }
   };
 
+  const handleSidebarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // 클릭한 요소가 사이드바 내부의 버튼 등이 아닌 빈 영역일 경우만 닫기
+    if (isOpen && (e.target as HTMLElement).closest('ul') === null) {
+      toggleSidebar();
+    } else if (!isOpen) {
+      toggleSidebar();
+    }
+  };
+
   return (
-    <div className="w-100 h-screen bg-orange-200 text-black p-4 fixed">
-      <img src={ksisLogo} alt="KSIS Logo" className="w-24 mx-auto"></img>
-      <br />
-      <h3 className="text-center mb-4 ">
-        {' '}
-        <span className="font-bold">{accountId}</span>님 환영합니다.
-      </h3>
-      <ul className="space-y-2">
-        <li>
-          <NavLink
-            to={UPLOAD}
-            className={({ isActive }) =>
-              `text-center block text-lg font-bold p-2 rounded-full ${
-                isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
-              }`
-            }
-          >
-            파일 업로드
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to={UPLOAD_PROGRESS}
-            className={({ isActive }) =>
-              `text-center block text-lg font-bold p-2 rounded-full ${
-                isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
-              }`
-            }
-          >
-            업로드 진행상황
-          </NavLink>
-        </li>
-        <li>
-          <NavLink
-            to={'/'}
-            onClick={handleLogout}
-            className={({ isActive }) =>
-              `text-center block text-lg font-bold p-2 rounded-full ${
-                isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
-              }`
-            }
-          >
-            로그아웃
-          </NavLink>
-        </li>
-      </ul>
+    <div
+      className={`fixed h-screen ${isOpen ? 'w-48' : 'w-8'} bg-gray-100 transition-width duration-300 p-4`}
+      onClick={handleSidebarClick}
+    >
+      <div className="flex justify-between items-center">
+        <img src={ksisLogo} alt="KSIS Logo" className={`transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'} w-24`} />
+      </div>
+      {isOpen && (
+        <>
+          <h3 className="text-center mb-4">
+            <span className="font-bold">{accountId}</span>님 환영합니다.
+          </h3>
+          <ul className="space-y-2">
+            <li>
+              <NavLink
+                to={UPLOAD}
+                className={({ isActive }) =>
+                  `text-center block text-lg font-bold p-2 rounded-full ${
+                    isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
+                  }`
+                }
+              >
+                파일 업로드
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to={UPLOAD_PROGRESS}
+                className={({ isActive }) =>
+                  `text-center block text-lg font-bold p-2 rounded-full ${
+                    isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
+                  }`
+                }
+              >
+                업로드 진행상황
+              </NavLink>
+            </li>
+            <li>
+              <NavLink
+                to={'/'}
+                onClick={handleLogout}
+                className={({ isActive }) =>
+                  `text-center block text-lg font-bold p-2 rounded-full ${
+                    isActive ? 'bg-orange-400 text-white' : 'hover:bg-orange-400'
+                  }`
+                }
+              >
+                로그아웃
+              </NavLink>
+            </li>
+          </ul>
+        </>
+      )}
     </div>
   );
 };
