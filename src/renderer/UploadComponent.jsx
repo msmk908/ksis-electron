@@ -68,6 +68,18 @@ function UploadComponent() {
   const handleFileChange = async (e) => {
     const newFiles = Array.from(e.target.files);
 
+    // 중복 파일 필터링
+    const filteredFiles = newFiles.filter((newFile) =>
+      files.some(
+        (file) => file.name === newFile.name && file.size === newFile.size,
+      ),
+    );
+
+    if (filteredFiles.length > 0) {
+      showAlert('이미 첨부된 파일입니다.');
+      return;
+    }
+
     // 서버에 파일을 전송하여 MIME 타입 검증
     const formData = new FormData();
     newFiles.forEach((file) => {
@@ -154,6 +166,9 @@ function UploadComponent() {
         [files.length + index]: fileUrl,
       }));
     });
+
+    // 파일 입력 필드를 초기화하여 동일한 파일을 다시 첨부할 수 있게 함
+    fileInputRef.current.value = null;
   };
 
   // 드래그 드롭 메서드
@@ -162,6 +177,18 @@ function UploadComponent() {
     e.stopPropagation();
 
     const newFiles = Array.from(e.dataTransfer.files);
+
+    // 중복 파일 필터링
+    const filteredFiles = newFiles.filter((newFile) =>
+      files.some(
+        (file) => file.name === newFile.name && file.size === newFile.size,
+      ),
+    );
+
+    if (filteredFiles.length > 0) {
+      showAlert('이미 첨부된 파일입니다.');
+      return;
+    }
 
     // 서버에 파일을 전송하여 MIME 타입 검증
     const formData = new FormData();
@@ -252,6 +279,9 @@ function UploadComponent() {
         [files.length + index]: fileUrl,
       }));
     });
+
+    // 파일 입력 필드를 초기화하여 동일한 파일을 다시 첨부할 수 있게 함
+    fileInputRef.current.value = null;
   };
 
   // 파일 삭제 핸들러
