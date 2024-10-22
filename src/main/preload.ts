@@ -76,7 +76,7 @@ contextBridge.exposeInMainWorld('env', {
 
   API_BASE_URL: apiBaseUrl || 'https://www.ksisdisplay.com/api',
   WEB_BASE_URL: webBaseUrl || 'https://www.ksisdisplay.com',
-  API_WS_URL: webSocketUrl || 'ws://localhost:8080',
+  API_WS_URL: webSocketUrl || 'wss://www.ksisdisplay.com/api',
 });
 
 export type ElectronHandler = typeof electronHandler;

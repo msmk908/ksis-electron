@@ -43,7 +43,7 @@ const Mac = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen bg-orange-100">
+    <div className="flex flex-col justify-center items-center h-screen bg-gray-100">
       <img src={ksisLogo} alt="KSIS Logo" className="mb-8 w-40 h-auto" />
 
       <button
