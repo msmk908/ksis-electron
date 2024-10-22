@@ -46,7 +46,7 @@ const Login = () => {
   };
 
   return (
-    <div className="flex justify-center items-center h-screen bg-orange-100">
+    <div className="flex justify-center items-center h-screen bg-gray-100">
       <form
         id="login-form"
         className="flex flex-col items-center w-full max-w-md bg-white p-8 rounded-lg shadow-lg"
