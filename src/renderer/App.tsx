@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useEffect } from 'react';
 import {
   MemoryRouter as Router,
@@ -22,18 +22,23 @@ import Mac from './Mac';
 import 'tailwindcss/tailwind.css'; // Tailwind CSS import
 import fetcher from '../fetcher';
 import { CHECK_TOKEN, ACCESS_LOG } from '../constants/api_constant';
-// import ProtectedRoute from './ProtectedRoute';
 
 function App() {
+  const [isOpen, setIsOpen] = useState(true); // 사이드바 상태 관리
+
+  const toggleSidebar = () => {
+    setIsOpen(!isOpen); // 사이드바 열리고 닫히는 상태를 반전시킴
+  };
+
   return (
     <Router>
       {/* <EncodingComplete /> */}
-      <RouteHandler />
+      <RouteHandler isOpen={isOpen} toggleSidebar={toggleSidebar}  />
     </Router>
   );
 }
 
-const RouteHandler = () => {
+const RouteHandler = ({ isOpen, toggleSidebar }: { isOpen: boolean; toggleSidebar: () => void }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const shouldHideSidebar =
@@ -97,15 +102,13 @@ const RouteHandler = () => {
   return (
     <div className="flex">
       {/* 사이드바를 조건부로 렌더링 */}
-      {!shouldHideSidebar && <Sidebar />}
-      <div className={`flex-1 ${!shouldHideSidebar ? 'ml-64' : ''}`}>
+      {!shouldHideSidebar && <Sidebar isOpen={isOpen} toggleSidebar={toggleSidebar} />}
+      <div className={`flex-1 transition-all duration-300 ${!shouldHideSidebar ? (isOpen ? 'ml-64' : 'ml-24') : ''}`}>
         <Routes>
           <Route path={MAC} element={<Mac />} />
           <Route path={LOGIN} element={<Login />} />
-          {/* <Route element={<ProtectedRoute />}> */}
           <Route path={UPLOAD} element={<UploadComponent />} />
           <Route path={UPLOAD_PROGRESS} element={<UploadProgressComponent />} />
-          {/* </Route> */}
         </Routes>
       </div>
     </div>
