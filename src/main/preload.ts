@@ -64,9 +64,10 @@ contextBridge.exposeInMainWorld('electron', electronHandler);
 
 const apiBaseUrl = process.env.REACT_APP_API_BASE_URL;
 const webBaseUrl = process.env.REACT_APP_WEB_BASE_URL;
-const webSocketUrl = process.env.REACT_APP_WS_API_URL;
+const webSocketUrl = process.env.REACT_APP_API_WS_URL;
 console.log('apiBaseUrl : ', apiBaseUrl);
 console.log('webBaseUrl : ', webBaseUrl);
+console.log('socketBaseUrl : ', webSocketUrl);
 
 contextBridge.exposeInMainWorld('env', {
   // API_BASE_URL: apiBaseUrl || 'http://localhost:8080',
