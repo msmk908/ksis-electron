@@ -988,7 +988,7 @@ function UploadComponent() {
       </div>
       <br />
       <Button
-        className="scale-110 border-black"
+        className="scale-110 border-black mb-10"
         color="sky"
         onClick={() =>
           showAlert('파일을 업로드 하시겠습니까?', titleVerification)
